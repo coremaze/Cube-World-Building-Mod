@@ -2,15 +2,13 @@
 #include <windows.h>
 #include <iostream>
 #include "cube.h"
-#include <vector>
+#include "zonesaver.h"
 
 #define no_shenanigans __attribute__((noinline)) __declspec(dllexport)
 
 UINT_PTR base;
 
 cube::GameController* GameController;
-
-
 
 unsigned int GameController_ptr;
 unsigned int World_ptr;
@@ -23,6 +21,8 @@ unsigned int SetBlockZ;
 
 char color[4];
 DWORD color_ptr = (DWORD)&color;
+
+ZoneSaver::WorldContainer worldContainer;
 
 
 void __stdcall no_shenanigans ASMSetBlocks(){
@@ -119,6 +119,11 @@ __stdcall bool no_shenanigans HandleMessage(wchar_t msg[], unsigned int msg_size
 
         SetBlock(blockx, blocky, blockz, (char)r, (char)g, (char)b, (char)type);
         UpdateChunk(chunkx, chunky);
+
+        //save everything
+        worldContainer.SetBlock(blockx, blocky, blockz, (char)r, (char)g, (char)b, (char)type);
+        worldContainer.OutputFiles();
+
         return true;
     }
     return false;
