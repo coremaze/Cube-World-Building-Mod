@@ -30,26 +30,29 @@ class Vector3_Float{
 };
 
 namespace cube{
-    class World{
-    public:
-
-    };
-    class GameController{
-    public:
-        char padding0[0x2DC];
-        unsigned int chunk_array_dimensions;
-        unsigned int chunk_array_ptr;
-        World world;
-    };
     class Chunk{
     public:
        char padding0[0x18];
        unsigned int x;
        unsigned int y;
        char padding2[0x54];
-       bool update;
+       uint8_t update;
        char padding1[0x1F3];
     };
+    class World{
+    public:
+        char padding0[0x94];
+        char worldName[0x10];
+
+    };
+    class GameController{
+    public:
+        char padding0[0x2DC];
+        unsigned int chunk_array_dimensions; //0x2DC
+        unsigned int chunk_array_ptr; //0x2E0
+        World world;
+    };
+
     class Creature{
     public:
         char padding0[0x10];

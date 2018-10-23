@@ -122,7 +122,7 @@ __stdcall bool no_shenanigans HandleMessage(wchar_t msg[], unsigned int msg_size
 
         //save everything
         worldContainer.SetBlock(blockx, blocky, blockz, (char)r, (char)g, (char)b, (char)type);
-        worldContainer.OutputFiles();
+        worldContainer.OutputFiles(GameController->world.worldName);
 
         return true;
     }
