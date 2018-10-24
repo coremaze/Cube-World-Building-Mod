@@ -7,12 +7,11 @@
 #include <algorithm>
 namespace ZoneSaver{
 
-
 class ZoneBlock{
 public:
     unsigned int x, y, z;
     char r, g, b, type;
-    ZoneBlock(unsigned int _x, unsigned int _y, unsigned int _z, char _r, char _g, char _b, char _type){
+    ZoneBlock(unsigned int _x, unsigned int _y, int _z, char _r, char _g, char _b, char _type){
         this->x = _x;
         this->y = _y;
         this->z = _z;
@@ -36,7 +35,7 @@ public:
     }
 
     //Block coordinates should be absolute, not relative to zone
-    void SetZoneBlock(unsigned int x, unsigned int y, unsigned int z, char r, char g, char b, char type){
+    void SetZoneBlock(unsigned int x, unsigned int y, int z, char r, char g, char b, char type){
         //Update existing block if it exists.
         for (ZoneBlock* block : this->blocks){
             if (block->x == x && block->y == y && block->z == z){
@@ -81,7 +80,7 @@ public:
 class WorldContainer{
 public:
     std::vector<ZoneContainer*> zones;
-    ZoneContainer* SetBlock(unsigned int x, unsigned int y, unsigned int z, char r, char g, char b, char type){
+    ZoneContainer* SetBlock(unsigned int x, unsigned int y, int z, char r, char g, char b, char type){
         unsigned int zonex = x / 0x100;
         unsigned int zoney = y / 0x100;
 
