@@ -175,9 +175,8 @@ __stdcall bool no_shenanigans HandleMessage(wchar_t msg[], unsigned int msg_size
     return false;
 }
 
-__stdcall void no_shenanigans HandleChunkLoaded(unsigned int zone_ptr){
+__stdcall void no_shenanigans HandleZoneLoaded(cube::Zone* zone){
     wchar_t msg[1024];
-    cube::Zone* zone = (cube::Zone*)(zone_ptr);
 
     //Get a block vector. It will either be from an existing Zone, a Zone newly created from a file, or an empty vector
     std::vector<ZoneSaver::ZoneBlock*> blocks = worldContainer.LoadZoneBlocks(GameController->world.worldName, zone->x, zone->y);
@@ -207,6 +206,13 @@ __stdcall void no_shenanigans HandleChunkLoaded(unsigned int zone_ptr){
     }
 }
 
+__stdcall void no_shenanigans HandleZoneDelete(cube::Zone* zone){
+    wchar_t msg[1024];
+    swprintf(msg, L"A cube::Zone has been deleted. X: %u, Y: %u\n", zone->x, zone->y);
+    PrintMessage(msg);
+    worldContainer.DeleteZoneContainer(zone->x, zone->y);
+}
+
 
 DWORD WINAPI no_shenanigans RegisterCallbacks(){
         HMODULE modManagerDLL = LoadLibraryA("CallbackManager.dll");
@@ -216,10 +222,15 @@ DWORD WINAPI no_shenanigans RegisterCallbacks(){
         auto RegisterChatEventCallback = (RegisterChatEventCallback_t)GetProcAddress(modManagerDLL, "RegisterChatEventCallback");
         RegisterChatEventCallback((ChatEventCallback)HandleMessage);
 
-        typedef bool (__stdcall *ChunkLoadedCallback)(unsigned int zone_ptr);
-        typedef void (*RegisterChunkLoadedCallback_t)(ChunkLoadedCallback cb);
-        auto RegisterChunkLoadedCallback = (RegisterChunkLoadedCallback_t)GetProcAddress(modManagerDLL, "RegisterChunkLoadedCallback");
-        RegisterChunkLoadedCallback((ChunkLoadedCallback)HandleChunkLoaded);
+        typedef bool (__stdcall *ZoneLoadedCallback)(unsigned int zone_ptr);
+        typedef void (*RegisterZoneLoadedCallback_t)(ZoneLoadedCallback cb);
+        auto RegisterZoneLoadedCallback = (RegisterZoneLoadedCallback_t)GetProcAddress(modManagerDLL, "RegisterZoneLoadedCallback");
+        RegisterZoneLoadedCallback((ZoneLoadedCallback)HandleZoneLoaded);
+
+        typedef bool (__stdcall *ZoneDeleteCallback)(unsigned int zone_ptr);
+        typedef void (*RegisterZoneDeleteCallback_t)(ZoneDeleteCallback cb);
+        auto RegisterZoneDeleteCallback = (RegisterZoneDeleteCallback_t)GetProcAddress(modManagerDLL, "RegisterZoneDeleteCallback");
+        RegisterZoneDeleteCallback((ZoneDeleteCallback)HandleZoneDelete);
 
         return 0;
 }

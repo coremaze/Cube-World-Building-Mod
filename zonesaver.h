@@ -4,6 +4,7 @@
 #include <fstream>
 #include <iostream>
 #include <windows.h>
+#include <algorithm>
 namespace ZoneSaver{
 
 
@@ -175,6 +176,22 @@ public:
             //one until the user places a block, so return an empty vector.
             return emptyBlocks;
         }
+    }
+
+    //Deletes the first ZoneContainer with the specified coordinate, returns whether it found one to delete.
+    bool DeleteZoneContainer(unsigned int zone_x, unsigned int zone_y){
+        for (ZoneContainer* zone : this->zones){
+            if (zone->zone_x == zone_x && zone->zone_y == zone_y){
+                std::vector<ZoneContainer*>::iterator position = std::find(this->zones.begin(), this->zones.end(), zone);
+                if ( position != this->zones.end() ){
+                    this->zones.erase(position);
+                    delete zone;
+                    return true;
+                }
+
+            }
+        }
+        return false;
     }
 };
 
