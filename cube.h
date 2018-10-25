@@ -1,10 +1,16 @@
 #ifndef CUBE_H
 #define CUBE_H
 #define no_shenanigans __attribute__((noinline)) __declspec(dllexport)
+#include <math.h>
 
 unsigned int imageBase = 0x400000;
 
-
+float degrees_to_radians(float degrees){
+    return (degrees * 3.1415926535) / 180.0;
+}
+float radians_to_degrees(float radians){
+    return (radians * 180.0) / 3.1415926535;
+}
 
 //Some classes used by cube
 class Vector3_Int64{
@@ -48,12 +54,27 @@ class Color{
 };
 class BlockColor{
 public:
-    char r, g, b, type;
-    BlockColor(char _r, char _g, char _b, char _t){
+    unsigned char r, g, b, type;
+    BlockColor(unsigned char _r, unsigned char _g, unsigned char _b, unsigned char _t){
         this->r = _r;
         this->g = _g;
         this->b = _b;
         this->type = _t;
+    }
+};
+class Block{
+public:
+    unsigned int x, y;
+    int z;
+    BlockColor color = BlockColor(0,0,0,0);
+    Block(unsigned int _x, unsigned int _y, int _z, char _r, char _g, char _b, char _t){
+        this->x = _x;
+        this->y = _y;
+        this->z = _z;
+        this->color.r = _r;
+        this->color.g = _g;
+        this->color.b = _b;
+        this->color.type = _t;
     }
 };
 
@@ -93,7 +114,7 @@ namespace cube{
             auto cube_World_SetBlockInZone = (cube_World_SetBlockInZone_t)(imageBase + 0x4E7A0);
             cube_World_SetBlockInZone(this, x, y, z, color, zone);
         }
-        void SetBlock(unsigned int x, unsigned int y, int z, char r, char g, char b, char type){
+        void SetBlock(unsigned int x, unsigned int y, int z, unsigned char r, unsigned char g, unsigned char b, unsigned char type){
             BlockColor* color = new BlockColor(r, g, b, type);
             this->SetBlock(x, y, z, color, (cube::Zone*)nullptr);
             delete color;
@@ -106,7 +127,19 @@ namespace cube{
             return color;
         }
 
+
+
     };
+
+    class Creature{
+    public:
+        char padding0[0x10];
+        long long unsigned int x, y, z;
+        char padding1[0x138];
+        Vector3_Float camera_offset;
+
+    };
+
     class GameController{
     public:
         unsigned int field_0; //0x0
@@ -220,16 +253,101 @@ namespace cube{
             this->ASMPrintMessage();
         }
 
+        //This is definitely not the proper implementation.
+        //What's happening is that the entity list is supposedly
+        //an MSVC implementation of map(), which I don't know what to do with.
+        //Fix this later once it's better understood.
+        Creature* no_shenanigans GetLocalPlayer(){
+            DWORD entityaddr = (DWORD)this;
+            entityaddr += 0x39C;
+            entityaddr = *(DWORD*)entityaddr;
+            Creature* player = (Creature*)entityaddr;
+            return player;
+        }
+
+        Block* no_shenanigans GetBlockAtCrosshair(float reach_in_blocks_from_camera, bool want_face_block){
+            Creature* player = this->GetLocalPlayer();
+            //Calculate the direction the camera is in
+            float yaw = degrees_to_radians(this->cameraYaw + 90.0);
+            float pitch = degrees_to_radians(this->cameraPitch);
+
+            float camera_x_direction = cos(yaw) * sin(pitch);
+            float camera_y_direction = sin(yaw) * sin(pitch);
+            float camera_z_direction = -cos(pitch);
+
+            //Calculate where the camera is, relative to the player
+            float blocks_away_from_player_x = camera_x_direction * this->cameraZoom;
+            float blocks_away_from_player_y = camera_y_direction * this->cameraZoom;
+            float blocks_away_from_player_z = camera_z_direction * this->cameraZoom;
+
+            //Get the absolute location of the camera, in world units (not blocks)
+            const float VERTICAL_OFFSET = 1.6; //Calculation is ~1 block too low otherwise.
+            const float SIZE_OF_BLOCK_IN_WORLD_UNITS = 65536.0;
+            auto camera_x = player->x + (long long int)(blocks_away_from_player_x * SIZE_OF_BLOCK_IN_WORLD_UNITS);
+            auto camera_y = player->y + (long long int)(blocks_away_from_player_y * SIZE_OF_BLOCK_IN_WORLD_UNITS);
+            auto camera_z = player->z + (long long int)((blocks_away_from_player_z + VERTICAL_OFFSET) * SIZE_OF_BLOCK_IN_WORLD_UNITS);
+
+            //We're going to start the raycast at the current position of the camera.
+            unsigned int blockx = camera_x / 0x10000;
+            unsigned int blocky = camera_y / 0x10000;
+            unsigned int blockz = camera_z / 0x10000;
+
+            //These are for the case that you want the block on the face of whatever it hits.
+            unsigned int lastblockx = blockx;
+            unsigned int lastblocky = blocky;
+            unsigned int lastblockz = blockz;
+
+            float reach_limit = SIZE_OF_BLOCK_IN_WORLD_UNITS * reach_in_blocks_from_camera; //maximum reach in world units
+            float raycast_precision = 1000.0;
+            bool withinReach = false;
+
+            //Move the position back in the opposite direction until it hits a block.
+            for (float world_units_traveled = 0.0; world_units_traveled < reach_limit; world_units_traveled += raycast_precision){
+                //Update previous block before changing the current block
+                lastblockx = blockx;
+                lastblocky = blocky;
+                lastblockz = blockz;
+                blockx = camera_x / 0x10000;
+                blocky = camera_y / 0x10000;
+                blockz = camera_z / 0x10000;
+                //Figure out what's in the new location
+                BlockColor* color = this->world.GetBlock(blockx, blocky, blockz, (cube::Zone*)nullptr);
+                if (color->type != 0){ //If the block is not an air block
+                    withinReach = true;
+                    if (want_face_block){
+                        //If you want the face block, change the block coords to whatever was seen last time. ie, go back one.
+                        blockx = lastblockx;
+                        blocky = lastblocky;
+                        blockz = lastblockz;
+                    }
+                    break; //Leave loop if successfully hit a block
+                }
+                //Move the position back a tiny bit
+                camera_x -= (long long int)(camera_x_direction * raycast_precision);
+                camera_y -= (long long int)(camera_y_direction * raycast_precision);
+                camera_z -= (long long int)(camera_z_direction * raycast_precision);
+            }
+
+            //We've got a block coordinate now, whether it be the block we were looking at, the block on the face of another, or the block at the edge of our reach.
+            if (withinReach){
+                BlockColor* color = this->world.GetBlock(blockx, blocky, blockz, (cube::Zone*)nullptr);
+                Block* block = new Block(blockx, blocky, blockz, color->r, color->g, color->b, color->type);
+                return block;
+            }
+            else {
+                Block* block = (Block*)nullptr;
+                return block;
+            }
+
+        }
+
     };
 
-    class Creature{
-    public:
-        char padding0[0x10];
-        long long unsigned int x, y, z;
-        char padding1[0x138];
-        Vector3_Float camera_offset;
+    GameController* GetGameController(){
+        return (GameController*) *(DWORD*)(imageBase + 0x36B1C8);
+    }
 
-    };
+
 
     class Zone{
     public:

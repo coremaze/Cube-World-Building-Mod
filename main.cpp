@@ -8,135 +8,94 @@
 #define no_shenanigans __attribute__((noinline)) __declspec(dllexport)
 
 UINT_PTR base;
-
 cube::GameController* GameController;
-
 ZoneSaver::WorldContainer worldContainer;
 
-float degrees_to_radians(float degrees){
-    return (degrees * 3.1415926535) / 180.0;
-}
-float radians_to_degrees(float radians){
-    return (radians * 180.0) / 3.1415926535;
-}
+BlockColor current_block_color = BlockColor(255, 255, 255, 1);
+
+
+
 
 __stdcall bool no_shenanigans HandleMessage(wchar_t msg[], unsigned int msg_size){
-    DWORD entityaddr = (DWORD)GameController;
-    entityaddr += 0x39C;
-    entityaddr = *(DWORD*)entityaddr;
-    cube::Creature* player = (cube::Creature*)entityaddr;
+    cube::Creature* player = GameController->GetLocalPlayer();
 
     int r, g, b, type;
 
-    if ( swscanf(msg, L"/block %d %d %d %d", &r, &g, &b, &type) == 4){
-        typedef void(__thiscall* vector_int64_from_vector3_float_t)(Vector3_Int64*, Vector3_Float*);
-        auto vector_int64_from_vector3_float = (vector_int64_from_vector3_float_t)(base + 0x02C460);
-
-        Vector3_Int64 looking_at_offset = Vector3_Int64();
-        vector_int64_from_vector3_float(&looking_at_offset, &player->camera_offset);
-
-        Vector3_Int64 pos;
-        pos.x = player->x;
-        pos.y = player->y;
-        pos.z = player->z;
-
-        Vector3_Int64 block_pos;
-        block_pos.x = (looking_at_offset.x + pos.x);
-        block_pos.y = (looking_at_offset.y + pos.y);
-        block_pos.z = (looking_at_offset.z + pos.z);
-
-        unsigned int blockx = block_pos.x / 0x10000;
-        unsigned int blocky = block_pos.y / 0x10000;
-        unsigned int blockz = block_pos.z / 0x10000;
-
-        unsigned int chunkx = block_pos.x / 0x200000;
-        unsigned int chunky = block_pos.y / 0x200000;
-
-        GameController->world.SetBlock(blockx, blocky, blockz, r, g, b, type);
-        GameController->UpdateChunk(chunkx, chunky);
-
-        //save everything
-        worldContainer.SetBlock(blockx, blocky, blockz, (char)r, (char)g, (char)b, (char)type);
-        worldContainer.OutputFiles(GameController->world.worldName);
-
-        return true;
-    }
-    else if ( !wcscmp(msg, L"/block")){
-//        unsigned int blockx = player->x / 0x10000;
-//        unsigned int blocky = player->y / 0x10000;
-//        int blockz = player->z / 0x10000 - 2;
-//        BlockColor* color = GameController->world.GetBlock(blockx, blocky, blockz, (cube::Zone*)nullptr);
-        wchar_t response[256];
-
-        swprintf(response, L"%f %f\n",  GameController->cameraYaw, GameController->cameraPitch);
-
-        float yaw = degrees_to_radians(GameController->cameraYaw + 90.0);
-        float pitch = degrees_to_radians(GameController->cameraPitch);
-
-        float camera_x_direction = cos(yaw) * sin(pitch);
-        float camera_y_direction = sin(yaw) * sin(pitch);
-        float camera_z_direction = -cos(pitch);
-
-        float blocks_away_from_player_x = camera_x_direction * GameController->cameraZoom;
-        float blocks_away_from_player_y = camera_y_direction * GameController->cameraZoom;
-        float blocks_away_from_player_z = camera_z_direction * GameController->cameraZoom;
-
-        //get the location of the camera in world units.
-        auto camera_x = player->x + (long long int)(blocks_away_from_player_x * 65536.0);
-        auto camera_y = player->y + (long long int)(blocks_away_from_player_y * 65536.0);
-        auto camera_z = player->z + (long long int)((blocks_away_from_player_z + 1.6) * 65536.0); //it seems like this calculation was always ~1 block too low.
-
-        unsigned int blockx = camera_x / 0x10000;
-        unsigned int blocky = camera_y / 0x10000;
-        unsigned int blockz = camera_z / 0x10000;
-        unsigned int lastblockx = blockx;
-        unsigned int lastblocky = blocky;
-        unsigned int lastblockz = blockz;
-
-
-        //raycast
-        float reach_limit = 65536.0 * 30.0; //30 blocks
-        float raycast_precision = 1000.0;
-        bool withinReach = false;
-        bool wantFaceBlock = true;
-        for (float world_units_traveled = 0.0; world_units_traveled <= reach_limit; world_units_traveled += raycast_precision){
-            lastblockx = blockx;
-            lastblocky = blocky;
-            lastblockz = blockz;
-            blockx = camera_x / 0x10000;
-            blocky = camera_y / 0x10000;
-            blockz = camera_z / 0x10000;
-            BlockColor* color = GameController->world.GetBlock(blockx, blocky, blockz, (cube::Zone*)nullptr);
-            if (color->type != 0){
-                withinReach = true;
-                if (wantFaceBlock){
-                    blockx = lastblockx;
-                    blocky = lastblocky;
-                    blockz = lastblockz;
-                }
-                break;
-            }
-            camera_x -= (long long int)(camera_x_direction * raycast_precision);
-            camera_y -= (long long int)(camera_y_direction * raycast_precision);
-            camera_z -= (long long int)(camera_z_direction * raycast_precision);
-        }
-
-        if (withinReach){
-            unsigned int chunkx = blockx / 32;
-            unsigned int chunky = blocky / 32;
-
-            GameController->world.SetBlock(blockx, blocky, blockz, 255, 255, 255, 1);
+    if ( !wcscmp(msg, L"/place")){
+        Block* block = GameController->GetBlockAtCrosshair(40.0, true);
+        if (block != (Block*)nullptr){
+            r = current_block_color.r;
+            g = current_block_color.g;
+            b = current_block_color.b;
+            type = current_block_color.type;
+            //Put block in the world
+            GameController->world.SetBlock(block->x, block->y, block->z, r, g, b, type);
+            //Update visuals
+            unsigned int chunkx = block->x / 32;
+            unsigned int chunky = block->y / 32;
             GameController->UpdateChunk(chunkx, chunky);
 
             //save everything
-            worldContainer.SetBlock(blockx, blocky, blockz, 255, 255, 255, 1);
+            worldContainer.SetBlock(block->x, block->y, block->z, r, g, b, type);
             worldContainer.OutputFiles(GameController->world.worldName);
 
-            GameController->PrintMessage(response);
+            delete block;
+        }
+
+        return true;
+    }
+    else if ( !wcscmp(msg, L"/break")){
+        Block* block = GameController->GetBlockAtCrosshair(40.0, false);
+        if (block != (Block*)nullptr){
+            unsigned int blockx = block->x;
+            unsigned int blocky = block->y;
+            int blockz = block->z;
+            r = 255;
+            g = 255;
+            b = 255;
+            type = 0;
+            GameController->world.SetBlock(block->x, block->y, block->z, r, g, b, type);
+
+            unsigned int chunkx = blockx / 32;
+            unsigned int chunky = blocky / 32;
+            GameController->UpdateChunk(chunkx, chunky);
+
+            //save everything
+            worldContainer.SetBlock(block->x, block->y, block->z, r, g, b, type);
+            worldContainer.OutputFiles(GameController->world.worldName);
+
+            delete block;
         }
         return true;
 
     }
+    else if ( swscanf(msg, L"/setcolor %d %d %d", &r, &g, &b) == 3){
+        current_block_color.r = r;
+        current_block_color.g = g;
+        current_block_color.b = b;
+        current_block_color.type = 1;
+        wchar_t response[256];
+        swprintf(response, L"Selected block color %u %u %u.\n", (unsigned int)r, (unsigned int)g, (unsigned int)b);
+        GameController->PrintMessage(response, (unsigned int)r, (unsigned int)g, (unsigned int)b);
+        return true;
+    }
+    else if ( !wcscmp(msg, L"/get")){
+        Block* block = GameController->GetBlockAtCrosshair(40.0, false);
+        if (block != (Block*)nullptr){
+            current_block_color.r = block->color.r;
+            current_block_color.g = block->color.g;
+            current_block_color.b = block->color.b;
+            current_block_color.type = block->color.type;
+            wchar_t response[256];
+            swprintf(response, L"Selected block color %u %u %u.\n", (unsigned int)block->color.r, (unsigned int)block->color.g, (unsigned int)block->color.b);
+            GameController->PrintMessage(response, (unsigned int)block->color.r, (unsigned int)block->color.g, (unsigned int)block->color.b);
+            delete block;
+        }
+        return true;
+
+    }
+
+
     return false;
 }
 
@@ -179,18 +138,89 @@ DWORD WINAPI no_shenanigans RegisterCallbacks(){
         return 0;
 }
 
+void no_shenanigans ControlsChecker(){
+    //quick and dirty just so I could demonstrate how it could work
+    Sleep(10000);
+    unsigned char r = 255;
+    unsigned char g = 255;
+    unsigned char b = 255;
+    unsigned char type = 0;
+    while (true){
+        Sleep(100);
+        if (GameController->M1 > (uint8_t)0){
+            Block* block = GameController->GetBlockAtCrosshair(40.0, false);
+            if (block != (Block*)nullptr){
+                unsigned int blockx = block->x;
+                unsigned int blocky = block->y;
+                int blockz = block->z;
+                r = 255;
+                g = 255;
+                b = 255;
+                type = 0;
+                GameController->world.SetBlock(block->x, block->y, block->z, r, g, b, type);
+
+                unsigned int chunkx = blockx / 32;
+                unsigned int chunky = blocky / 32;
+                GameController->UpdateChunk(chunkx, chunky);
+
+                //save everything
+                worldContainer.SetBlock(block->x, block->y, block->z, r, g, b, type);
+                worldContainer.OutputFiles(GameController->world.worldName);
+
+                delete block;
+            }
+        }
+        else if (GameController->M2 > (uint8_t)0){
+            Block* block = GameController->GetBlockAtCrosshair(40.0, true);
+            if (block != (Block*)nullptr){
+                r = current_block_color.r;
+                g = current_block_color.g;
+                b = current_block_color.b;
+                type = current_block_color.type;
+                //Put block in the world
+                GameController->world.SetBlock(block->x, block->y, block->z, r, g, b, type);
+                //Update visuals
+                unsigned int chunkx = block->x / 32;
+                unsigned int chunky = block->y / 32;
+                GameController->UpdateChunk(chunkx, chunky);
+
+                //save everything
+                worldContainer.SetBlock(block->x, block->y, block->z, r, g, b, type);
+                worldContainer.OutputFiles(GameController->world.worldName);
+
+                delete block;
+            }
+
+        }
+        else if (GameController->M3 > (uint8_t)0){
+            Block* block = GameController->GetBlockAtCrosshair(40.0, false);
+            if (block != (Block*)nullptr){
+                current_block_color.r = block->color.r;
+                current_block_color.g = block->color.g;
+                current_block_color.b = block->color.b;
+                current_block_color.type = block->color.type;
+                wchar_t response[256];
+                swprintf(response, L"Selected block color %u %u %u.\n", (unsigned int)block->color.r, (unsigned int)block->color.g, (unsigned int)block->color.b);
+                GameController->PrintMessage(response, (unsigned int)block->color.r, (unsigned int)block->color.g, (unsigned int)block->color.b);
+                delete block;
+
+            }
+
+        }
+    }
+}
+
 extern "C" no_shenanigans BOOL APIENTRY DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 {
     base = (UINT_PTR)GetModuleHandle(NULL);
     cube::SetBase(base);
-
-    unsigned int GameController_ptr = *(DWORD*)(base + 0x36B1C8);
-    GameController = (cube::GameController*)GameController_ptr;
+    GameController = cube::GetGameController();
 
     switch (fdwReason)
     {
         case DLL_PROCESS_ATTACH:
-            CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)RegisterCallbacks, 0, 0, NULL);
+            HANDLE hThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)RegisterCallbacks, 0, 0, NULL);
+            CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)ControlsChecker, 0, 0, NULL);
             break;
     }
     return TRUE;

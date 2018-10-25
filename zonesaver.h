@@ -80,7 +80,7 @@ public:
 class WorldContainer{
 public:
     std::vector<ZoneContainer*> zones;
-    ZoneContainer* SetBlock(unsigned int x, unsigned int y, int z, char r, char g, char b, char type){
+    ZoneContainer* SetBlock(unsigned int x, unsigned int y, int z, unsigned char r, unsigned char g, unsigned char b, unsigned char type){
         unsigned int zonex = x / 0x100;
         unsigned int zoney = y / 0x100;
 
@@ -144,7 +144,7 @@ public:
             //This also causes a cube::Zone to be created if it is not.
             for (int i = 0; i < fsize; i+=sizeof(ZoneBlock)){
                 unsigned int x, y, z;
-                char r, g, b, type;
+                unsigned char r, g, b, type;
 
                 memcpy(&x, blocks + i + 0, 4);
                 memcpy(&y, blocks + i + 4, 4);
