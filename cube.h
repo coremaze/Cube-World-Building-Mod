@@ -99,10 +99,63 @@ namespace cube{
             delete color;
         }
 
+        BlockColor* GetBlock(unsigned int x, unsigned int y, int z, Zone* zone){
+            typedef BlockColor*(__thiscall* cube_World_GetBlock_t)(cube::World*, unsigned int, unsigned int, int, cube::Zone*);
+            auto cube_World_GetBlock = (cube_World_GetBlock_t)(imageBase + 0x2F7E0);
+            BlockColor* color = cube_World_GetBlock(this, x, y, z, zone);
+            return color;
+        }
+
     };
     class GameController{
     public:
-        char padding0[0x2DC];
+        unsigned int field_0; //0x0
+        uint8_t M1; //0x4
+        uint8_t M2; //0x5
+        uint8_t key_1; //0x6
+        uint8_t key_2; //0x7
+        uint8_t key_3; //0x8
+        uint8_t key_4; //0x9
+        uint8_t M3; //0xA
+        uint8_t key_W; //0xB
+        uint8_t key_S; //0xC
+        uint8_t key_A; //0xD
+        uint8_t key_D; //0xE
+        uint8_t key_R; //0xF
+        uint8_t key_T; //0x10
+        uint8_t key_E; //0x11
+        uint8_t key_Space; //0x12
+        uint8_t key_Ctrl; //0x13
+        uint8_t key_LeftShift; //0x14
+        uint8_t key_LeftShift2; //0x15
+        uint8_t field_16; //0x16
+        uint8_t key_Q; //0x17
+        uint8_t field_18;
+        uint8_t field_19;
+        char padding0[0x156];
+        unsigned int isFullscreen; //0x170
+        unsigned int width; //0x174
+        unsigned int height; //0x178
+        unsigned int antialiasingLevel; //0x17C
+        unsigned int renderDistance; //0x180
+        unsigned int soundFXVolume; //0x184
+        unsigned int musicVolume; //0x188
+        float cameraSpeed; //0x18C unsure about these types, didn't check
+        float cameraSmoothness; //0x190
+        unsigned int invertYAxis; //0x193
+        unsigned int language; //0x198
+        unsigned int miliseconds_per_frame; //0x19C
+        unsigned int shutdown; //0x1A0
+        float cameraPitch; //0x1A4
+        float cameraRoll; //0x1A8
+        float cameraYaw; //0x1AC
+        float destinationCameraPitch; //0x1B0
+        float destinationCameraRoll; //0x1B4
+        float destinationCameraYaw; //0x1B8
+        float cameraZoom; //0x1BC looks like distance in blocks
+        float destinationCameraZoom; //0x1C0
+        char padding1[0x114];
+        unsigned int entitylistptr; //0x2D8
         unsigned int chunk_array_dimensions; //0x2DC
         Chunk* chunks; //0x2E0 Pointer to an array of chunks
         World world;
