@@ -15,6 +15,47 @@ ZoneSaver::WorldContainer worldContainer;
 BlockColor current_block_color = BlockColor(255, 255, 255, 1);
 bool currently_building = false;
 
+void PrintSelectBlockMessage(unsigned char r, unsigned char g, unsigned char b, unsigned char type){
+    wchar_t response[256];
+    if ((type & 0b00111111) == 2){ //block is water
+        GameController->PrintMessage(L"Selected water block.\n", 135, 206, 250);
+    }
+    else if ((type & 0b00111111) == 3){ //block is a solid wet block
+        GameController->PrintMessage(L"Selected ", (unsigned int)r, (unsigned int)g, (unsigned int)b);
+        GameController->PrintMessage(L"wet", 135, 206, 250);
+        swprintf(response, L" block color %u %u %u.\n", (unsigned int)r, (unsigned int)g, (unsigned int)b, type);
+        GameController->PrintMessage(response, (unsigned int)r, (unsigned int)g, (unsigned int)b);
+    }
+    else { //other, solid block
+    swprintf(response, L"Selected block color %u %u %u.\n", (unsigned int)r, (unsigned int)g, (unsigned int)b);
+    GameController->PrintMessage(response, (unsigned int)r, (unsigned int)g, (unsigned int)b);
+    }
+}
+
+void UpdateChunkAndAdjacent(unsigned int blockx, unsigned int blocky){
+    //First, update the actual chunk in question
+    const unsigned int CHUNK_SIZE_IN_BLOCKS = 32;
+    unsigned int chunkx = blockx / CHUNK_SIZE_IN_BLOCKS;
+    unsigned int chunky = blocky / CHUNK_SIZE_IN_BLOCKS;
+    GameController->UpdateChunk(chunkx, chunky);
+
+    //If a block is on the border of a chunk, update the bordering chunk too
+    //X
+    if ( (blockx % CHUNK_SIZE_IN_BLOCKS) == 0){
+        GameController->UpdateChunk(chunkx-1, chunky);
+    }
+    else if ( (blockx % CHUNK_SIZE_IN_BLOCKS) == CHUNK_SIZE_IN_BLOCKS-1){
+        GameController->UpdateChunk(chunkx+1, chunky);
+    }
+
+    //Y
+    if ( (blocky % CHUNK_SIZE_IN_BLOCKS) == 0){
+        GameController->UpdateChunk(chunkx, chunky-1);
+    }
+    else if ( (blocky % CHUNK_SIZE_IN_BLOCKS) == CHUNK_SIZE_IN_BLOCKS-1){
+        GameController->UpdateChunk(chunkx, chunky+1);
+    }
+}
 
 void no_shenanigans ControlsChecker(){
     unsigned char r = 255;
@@ -42,9 +83,7 @@ void no_shenanigans ControlsChecker(){
                 GameController->world.SetBlock(block->x, block->y, block->z, r, g, b, type);
 
                 //update visuals
-                unsigned int chunkx = blockx / 32;
-                unsigned int chunky = blocky / 32;
-                GameController->UpdateChunk(chunkx, chunky);
+                UpdateChunkAndAdjacent(blockx, blocky);
 
                 //save everything
                 worldContainer.SetBlock(block->x, block->y, block->z, r, g, b, type);
@@ -66,9 +105,7 @@ void no_shenanigans ControlsChecker(){
                 GameController->world.SetBlock(block->x, block->y, block->z, r, g, b, type);
 
                 //Update visuals
-                unsigned int chunkx = block->x / 32;
-                unsigned int chunky = block->y / 32;
-                GameController->UpdateChunk(chunkx, chunky);
+                UpdateChunkAndAdjacent(block->x, block->y);
 
                 //save everything
                 worldContainer.SetBlock(block->x, block->y, block->z, r, g, b, type);
@@ -86,9 +123,7 @@ void no_shenanigans ControlsChecker(){
                 current_block_color.g = block->color.g;
                 current_block_color.b = block->color.b;
                 current_block_color.type = block->color.type;
-                wchar_t response[256];
-                swprintf(response, L"Selected block color %u %u %u.\n", (unsigned int)block->color.r, (unsigned int)block->color.g, (unsigned int)block->color.b);
-                GameController->PrintMessage(response, (unsigned int)block->color.r, (unsigned int)block->color.g, (unsigned int)block->color.b);
+                PrintSelectBlockMessage(block->color.r, block->color.g, block->color.b, block->color.type);
                 delete block;
                 Sleep(250);
             }
@@ -101,17 +136,8 @@ __stdcall bool no_shenanigans HandleMessage(wchar_t msg[], unsigned int msg_size
     unsigned char r = 255;
     unsigned char g = 255;
     unsigned char b = 255;
-    if ( swscanf(msg, L"/setcolor %d %d %d", &r, &g, &b) == 3){
-        current_block_color.r = r;
-        current_block_color.g = g;
-        current_block_color.b = b;
-        current_block_color.type = 1;
-        wchar_t response[256];
-        swprintf(response, L"Selected block color %u %u %u.\n", (unsigned int)r, (unsigned int)g, (unsigned int)b);
-        GameController->PrintMessage(response, (unsigned int)r, (unsigned int)g, (unsigned int)b);
-        return true;
-    }
-    else if ( !wcscmp(msg, L"/build")){
+
+    if ( !wcscmp(msg, L"/build")){
         currently_building = !currently_building;
         wchar_t response[256];
         if (currently_building){
@@ -122,6 +148,32 @@ __stdcall bool no_shenanigans HandleMessage(wchar_t msg[], unsigned int msg_size
             GameController->PrintMessage(L"<Battle Mode>\n");
         }
 
+        return true;
+    }
+    else if ( swscanf(msg, L"/build color %d %d %d", &r, &g, &b) == 3){
+        current_block_color.r = r;
+        current_block_color.g = g;
+        current_block_color.b = b;
+        current_block_color.type = 1; //solid
+        PrintSelectBlockMessage(r, g, b, current_block_color.type);
+        return true;
+    }
+    else if ( !wcscmp(msg, L"/build wet")){
+        current_block_color.type = 3; //wet
+        PrintSelectBlockMessage(current_block_color.r, current_block_color.g, current_block_color.b, current_block_color.type);
+        return true;
+    }
+    else if ( !wcscmp(msg, L"/build water")){
+        current_block_color.type = 2; //water
+        current_block_color.r = 255;
+        current_block_color.g = 255;
+        current_block_color.b = 255;
+        PrintSelectBlockMessage(current_block_color.r, current_block_color.g, current_block_color.b, current_block_color.type);
+        return true;
+    }
+    else if ( !wcscmp(msg, L"/build dry")){
+        current_block_color.type = 1; //solid
+        PrintSelectBlockMessage(current_block_color.r, current_block_color.g, current_block_color.b, current_block_color.type);
         return true;
     }
 
