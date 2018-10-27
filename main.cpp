@@ -32,6 +32,26 @@ void PrintSelectBlockMessage(unsigned char r, unsigned char g, unsigned char b, 
     }
 }
 
+void PrintCommand(wchar_t* command, wchar_t* description){
+    GameController->PrintMessage(command, 0, 255, 127);
+    GameController->PrintMessage(L" - ");
+    GameController->PrintMessage(description);
+    GameController->PrintMessage(L"\n");
+}
+
+void PrintHelpMessage(){
+    GameController->PrintMessage(L"[");
+    GameController->PrintMessage(L"Building Mod", 135, 206, 250);
+    GameController->PrintMessage(L"]\n");
+
+    PrintCommand(L"/build", L"Toggles building mode.");
+    PrintCommand(L"/build color # # #", L"Select block color.");
+    PrintCommand(L"/build water", L"Select a water block.");
+    PrintCommand(L"/build wet", L"Change current block to wet.");
+    PrintCommand(L"/build dry", L"Change current block to normal.");
+
+}
+
 void UpdateChunkAndAdjacent(unsigned int blockx, unsigned int blocky){
     //First, update the actual chunk in question
     const unsigned int CHUNK_SIZE_IN_BLOCKS = 32;
@@ -175,6 +195,10 @@ __stdcall bool no_shenanigans HandleMessage(wchar_t msg[], unsigned int msg_size
         current_block_color.type = 1; //solid
         PrintSelectBlockMessage(current_block_color.r, current_block_color.g, current_block_color.b, current_block_color.type);
         return true;
+    }
+    else if ( !wcscmp(msg, L"/build help") ){
+        PrintHelpMessage();
+    return true;
     }
 
 
