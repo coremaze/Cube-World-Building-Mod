@@ -134,8 +134,10 @@ namespace cube{
     class Creature{
     public:
         char padding0[0x10];
-        long long unsigned int x, y, z;
-        char padding1[0x138];
+        long long unsigned int x, y, z; //0x10 ~ 0x27
+        char padding2[0x60];
+        float physical_size; //0x88
+        char padding1[0xD4];
         Vector3_Float camera_offset;
 
     };
@@ -254,8 +256,6 @@ namespace cube{
         }
 
         //This is definitely not the proper implementation.
-        //What's happening is that the entity list is supposedly
-        //an MSVC implementation of map(), which I don't know what to do with.
         //Fix this later once it's better understood.
         Creature* no_shenanigans GetLocalPlayer(){
             DWORD entityaddr = (DWORD)this;
@@ -281,7 +281,7 @@ namespace cube{
             float blocks_away_from_player_z = camera_z_direction * this->cameraZoom;
 
             //Get the absolute location of the camera, in world units (not blocks)
-            const float VERTICAL_OFFSET = 1.6; //Calculation is ~1 block too low otherwise.
+            float VERTICAL_OFFSET = player->physical_size/2 + 0.5;//Calculation is ~1 block too low otherwise.
             const float SIZE_OF_BLOCK_IN_WORLD_UNITS = 65536.0;
             auto camera_x = player->x + (long long int)(blocks_away_from_player_x * SIZE_OF_BLOCK_IN_WORLD_UNITS);
             auto camera_y = player->y + (long long int)(blocks_away_from_player_y * SIZE_OF_BLOCK_IN_WORLD_UNITS);
@@ -312,7 +312,7 @@ namespace cube{
                 blockz = camera_z / 0x10000;
                 //Figure out what's in the new location
                 BlockColor* color = this->world.GetBlock(blockx, blocky, blockz, (cube::Zone*)nullptr);
-                if (color->type != 0){ //If the block is not an air block
+                if ((color->type & 0b00111111) != 0){ //If the block is not an air block
                     withinReach = true;
                     if (want_face_block){
                         //If you want the face block, change the block coords to whatever was seen last time. ie, go back one.
