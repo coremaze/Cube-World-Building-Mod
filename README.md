@@ -20,3 +20,5 @@ Middle Click - Copy block from environment. This is the primary method of switch
 `/build water` - Sets your current block to water.
 
 `/build dry` - Sets your current block to a normal block. Color information is retained. This is for undoing a wet block.
+
+![Building Mod](https://puu.sh/BSrwg/7c1c3aa890.jpg)
