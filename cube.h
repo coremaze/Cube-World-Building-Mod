@@ -2,6 +2,8 @@
 #define CUBE_H
 #define no_shenanigans __attribute__((noinline)) __declspec(dllexport)
 #include <math.h>
+#include <vector>
+#include <iostream>
 
 unsigned int imageBase = 0x400000;
 
@@ -104,10 +106,43 @@ namespace cube{
        uint8_t needs_update;
        char padding1[0x1F3];
     };
+
+        class Creature{
+    public:
+        unsigned int field_0;
+        unsigned int field_4;
+        long long int GUID;
+        long long unsigned int x, y, z; //0x10 ~ 0x27
+        char padding2[0x60];
+        float physical_size; //0x88
+        char padding1[0xD4];
+        Vector3_Float camera_offset;
+        float HP;
+        float MP;
+        float block_power;
+        float HP_multiplier;
+        float attack_speed_multiplier;
+        float damage_multiplier;
+        float armor_multiplier;
+        float resistance_multiplier;
+        char field_18C;
+        char field_18D;
+        char field_18E;
+        char field_18F;
+        int level;
+        int XP;
+        long long parent_GUID;
+
+    };
+
     class World{
     public:
-        char padding0[0x94];
-        char worldName[0x10];
+        unsigned int field_0; //0
+        unsigned int map_ptr; //4
+        char padding0[0x8C]; //8 ~ 93
+        char worldName[0x10]; //94 ~ A3
+        char padding1[0x80001C]; //A4 ~ 8000BF
+        unsigned int critical_section; //8000C0
 
         void SetBlock(unsigned int x, unsigned int y, int z, BlockColor* color, Zone* zone){
             typedef void(__thiscall* cube_World_SetBlockInZone_t)(cube::World*, unsigned int, unsigned int, int, BlockColor*, cube::Zone*);
@@ -127,20 +162,18 @@ namespace cube{
             return color;
         }
 
+        void Lock(){
+            EnterCriticalSection((LPCRITICAL_SECTION)&this->critical_section);
+        }
+
+        void Unlock(){
+            LeaveCriticalSection((LPCRITICAL_SECTION)&this->critical_section);
+        }
 
 
-    };
-
-    class Creature{
-    public:
-        char padding0[0x10];
-        long long unsigned int x, y, z; //0x10 ~ 0x27
-        char padding2[0x60];
-        float physical_size; //0x88
-        char padding1[0xD4];
-        Vector3_Float camera_offset;
 
     };
+
 
     class GameController{
     public:
@@ -190,7 +223,7 @@ namespace cube{
         float cameraZoom; //0x1BC looks like distance in blocks
         float destinationCameraZoom; //0x1C0
         char padding1[0x114];
-        unsigned int entitylistptr; //0x2D8
+        unsigned int field_2D8; //0x2D8
         unsigned int chunk_array_dimensions; //0x2DC
         Chunk* chunks; //0x2E0 Pointer to an array of chunks
         World world;
@@ -339,6 +372,25 @@ namespace cube{
                 return block;
             }
 
+        }
+
+        std::vector<Creature*>* GetCreatures(){
+            std::vector<Creature*>* creatures = new std::vector<Creature*>;
+            unsigned int map_ptr = this->world.map_ptr;
+            unsigned int node_ptr = *(unsigned int*)map_ptr;
+
+            while (node_ptr != map_ptr){
+                unsigned int creature_ptr_ptr = node_ptr + 0x18;
+                unsigned int creature_ptr = *(unsigned int*)creature_ptr_ptr;
+                cube::Creature* creature = (cube::Creature*)creature_ptr;
+
+                typedef void(__thiscall* mapnext_t)(unsigned int* node_ptr);
+                auto mapnext = (mapnext_t)(imageBase + 0x1C3EA0);
+                mapnext(&node_ptr);
+
+                creatures->push_back(creature);
+            }
+            return creatures;
         }
 
     };

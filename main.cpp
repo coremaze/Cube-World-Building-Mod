@@ -212,9 +212,7 @@ __stdcall void no_shenanigans HandleZoneLoaded(cube::Zone* zone){
     //Place blocks in the world and update them
     for (ZoneSaver::ZoneBlock* block : blocks){
         GameController->world.SetBlock(block->x, block->y, block->z, block->r, block->g, block->b, block->type);
-        unsigned int chunkx = block->x / 0x200000;
-        unsigned int chunky = block->y / 0x200000;
-        GameController->UpdateChunk(chunkx, chunky);
+        UpdateChunkAndAdjacent(block->x, block->y);
     }
 }
 
