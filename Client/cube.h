@@ -1,9 +1,11 @@
+#undef __STRICT_ANSI__
 #ifndef CUBE_H
 #define CUBE_H
 #define no_shenanigans __attribute__((noinline)) __declspec(dllexport)
 #include <math.h>
 #include <vector>
 #include <iostream>
+
 
 unsigned int imageBase = 0x400000;
 
@@ -142,7 +144,8 @@ namespace cube{
         char padding0[0x8C]; //8 ~ 93
         char worldName[0x10]; //94 ~ A3
         char padding1[0x80001C]; //A4 ~ 8000BF
-        unsigned int critical_section; //8000C0
+        unsigned int critical_section; //8000C0 ~ 8000C3
+        char padding2[0x1D8]; //8000C4 ~ 80029B
 
         void SetBlock(unsigned int x, unsigned int y, int z, BlockColor* color, Zone* zone){
             typedef void(__thiscall* cube_World_SetBlockInZone_t)(cube::World*, unsigned int, unsigned int, int, BlockColor*, cube::Zone*);
@@ -226,7 +229,12 @@ namespace cube{
         unsigned int field_2D8; //0x2D8
         unsigned int chunk_array_dimensions; //0x2DC
         Chunk* chunks; //0x2E0 Pointer to an array of chunks
-        World world;
+        World world; //0x2E4 ~ 80057F
+        unsigned int field_800580; //800580 ~ 800583
+        char field_800584; //800584
+        uint8_t on_server; //800585
+        char padding2[0x143]; //800589 ~ 8006CB
+        SOCKET server_socket; //0x8006CC
 
         void UpdateChunk(unsigned int chunk_x, unsigned int chunk_y){
             //the dimensions are stored as a side length. Must square to get total number of chunks.

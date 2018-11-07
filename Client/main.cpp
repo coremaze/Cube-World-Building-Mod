@@ -5,6 +5,7 @@
 #include "zonesaver.h"
 #include "callbacks.h"
 #include <vector>
+#include "packets.h"
 
 #define no_shenanigans __attribute__((noinline)) __declspec(dllexport)
 
@@ -14,6 +15,70 @@ ZoneSaver::WorldContainer worldContainer;
 
 BlockColor current_block_color = BlockColor(255, 255, 255, 1);
 bool currently_building = false;
+
+//packets
+const unsigned int BUILDING_MOD_PACKET = 1263488066;
+const unsigned int ZONE_LOAD_PACKET = 1;
+const unsigned int ZONE_UNLOAD_PACKET = 2;
+const unsigned int BLOCK_PLACE_PACKET = 3;
+
+
+void SendZoneLoadPacket(SOCKET socket, unsigned int zone_x, unsigned int zone_y){
+    unsigned int packet_id = BUILDING_MOD_PACKET;
+    unsigned int sub_id = ZONE_LOAD_PACKET;
+    unsigned int pkt_size = 4 + 4 + 4 + 4;
+
+    char buf[pkt_size] = { 0 };
+    memcpy(buf     , &packet_id, 4);
+    memcpy(buf +  4, &sub_id   , 4);
+    memcpy(buf +  8, &zone_x   , 4);
+    memcpy(buf + 12, &zone_y   , 4);
+    AddPacket(socket, buf, pkt_size);
+}
+void SendZoneUnloadPacket(SOCKET socket, unsigned int zone_x, unsigned int zone_y){
+    unsigned int packet_id = BUILDING_MOD_PACKET;
+    unsigned int sub_id = ZONE_UNLOAD_PACKET;
+    unsigned int pkt_size = 4 + 4 + 4 + 4;
+
+    char buf[pkt_size] = { 0 };
+    memcpy(buf     , &packet_id, 4);
+    memcpy(buf +  4, &sub_id   , 4);
+    memcpy(buf +  8, &zone_x   , 4);
+    memcpy(buf + 12, &zone_y   , 4);
+    AddPacket(socket, buf, pkt_size);
+}
+void SendBlockPlacePacket(SOCKET socket, unsigned int x, unsigned int y, int z, unsigned char r, unsigned char g, unsigned char b, unsigned char type){
+    unsigned int packet_id = BUILDING_MOD_PACKET;
+    unsigned int sub_id = BLOCK_PLACE_PACKET;
+    unsigned int pkt_size = 4 + 4 + 4 + 4 + 4 + 1 + 1 + 1 + 1;
+
+    char buf[pkt_size] = {0};
+    memcpy(buf     , &packet_id, 4);
+    memcpy(buf +  4, &sub_id   , 4);
+    memcpy(buf +  8, &x        , 4);
+    memcpy(buf + 12, &y        , 4);
+    memcpy(buf + 16, &z        , 4);
+    memcpy(buf + 20, &r        , 1);
+    memcpy(buf + 21, &g        , 1);
+    memcpy(buf + 22, &b        , 1);
+    memcpy(buf + 23, &type     , 1);
+    AddPacket(socket, buf, pkt_size);
+}
+
+
+unsigned int __stdcall no_shenanigans HandlePacket(unsigned int packet_id, SOCKET socket){
+    if (packet_id == BUILDING_MOD_PACKET){
+        GameController->PrintMessage(L"Received BLOK.\n");
+        return 1;
+    }
+    return 0;
+}
+
+void __stdcall no_shenanigans HandleReadyToSend(SOCKET socket){
+    SendQueuedPackets(socket);
+}
+
+
 
 void PrintSelectBlockMessage(unsigned char r, unsigned char g, unsigned char b, unsigned char type){
     wchar_t response[256];
@@ -91,6 +156,7 @@ void no_shenanigans ControlsChecker(){
 
         Sleep(10);
         if (GameController->M1 > (uint8_t)0){
+            //Break block
             Block* block = GameController->GetBlockAtCrosshair(40.0, false);
             if (block != (Block*)nullptr){
                 unsigned int blockx = block->x;
@@ -100,6 +166,7 @@ void no_shenanigans ControlsChecker(){
                 g = 255;
                 b = 255;
                 type = 0;
+
                 GameController->world.SetBlock(block->x, block->y, block->z, r, g, b, type);
 
                 //update visuals
@@ -109,11 +176,17 @@ void no_shenanigans ControlsChecker(){
                 worldContainer.SetBlock(block->x, block->y, block->z, r, g, b, type);
                 worldContainer.OutputFiles(GameController->world.worldName);
 
+                if (GameController->on_server){
+                    //Send build packet (or in this case, break packet)
+                    SendBlockPlacePacket(GameController->server_socket, block->x, block->y, block->z, r, g, b, type);
+                }
+
                 delete block;
                 Sleep(100);
             }
         }
         else if (GameController->M2 > (uint8_t)0){
+            //Place block
             Block* block = GameController->GetBlockAtCrosshair(40.0, true);
             if (block != (Block*)nullptr){
                 r = current_block_color.r;
@@ -130,6 +203,11 @@ void no_shenanigans ControlsChecker(){
                 //save everything
                 worldContainer.SetBlock(block->x, block->y, block->z, r, g, b, type);
                 worldContainer.OutputFiles(GameController->world.worldName);
+
+                if (GameController->on_server){
+                    //Send build packet
+                    SendBlockPlacePacket(GameController->server_socket, block->x, block->y, block->z, r, g, b, type);
+                }
 
                 delete block;
                 Sleep(100);
@@ -206,6 +284,10 @@ __stdcall bool no_shenanigans HandleMessage(wchar_t msg[], unsigned int msg_size
 }
 
 __stdcall void no_shenanigans HandleZoneLoaded(cube::Zone* zone){
+    if (GameController->on_server){
+        SendZoneLoadPacket(GameController->server_socket, zone->x, zone->y);
+    }
+
     //Get a block vector. It will either be from an existing Zone, a Zone newly created from a file, or an empty vector
     std::vector<ZoneSaver::ZoneBlock*> blocks = worldContainer.LoadZoneBlocks(GameController->world.worldName, zone->x, zone->y);
 
@@ -217,6 +299,9 @@ __stdcall void no_shenanigans HandleZoneLoaded(cube::Zone* zone){
 }
 
 __stdcall void no_shenanigans HandleZoneDelete(cube::Zone* zone){
+    if (GameController->on_server){
+        SendZoneUnloadPacket(GameController->server_socket, zone->x, zone->y);
+    }
     worldContainer.DeleteZoneContainer(zone->x, zone->y);
 }
 
@@ -250,6 +335,9 @@ DWORD WINAPI no_shenanigans RegisterCallbacks(){
         RegisterCallback("RegisterPrimaryAttackAttemptCheckCallback", HandlePrimaryAttackAttemptCheck);
         RegisterCallback("RegisterAbilityAttackAttemptCheckCallback", HandleAbilityAttackAttemptCheck);
 
+        RegisterCallback("RegisterPacketCallback", HandlePacket);
+        RegisterCallback("RegisterReadyToSendCallback", HandleReadyToSend);
+
         return 0;
 }
 
@@ -265,7 +353,8 @@ extern "C" no_shenanigans BOOL APIENTRY DllMain(HINSTANCE hinstDLL, DWORD fdwRea
     switch (fdwReason)
     {
         case DLL_PROCESS_ATTACH:
-            HANDLE hThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)RegisterCallbacks, 0, 0, NULL);
+            PacketQueueInit();
+            CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)RegisterCallbacks, 0, 0, NULL);
             break;
     }
     return TRUE;

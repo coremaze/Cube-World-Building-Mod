@@ -9,7 +9,8 @@ namespace ZoneSaver{
 
 class ZoneBlock{
 public:
-    unsigned int x, y, z;
+    unsigned int x, y;
+    int z;
     char r, g, b, type;
     ZoneBlock(unsigned int _x, unsigned int _y, int _z, char _r, char _g, char _b, char _type){
         this->x = _x;
