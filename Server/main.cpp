@@ -65,12 +65,12 @@ unsigned int __stdcall no_shenanigans HandlePacket(unsigned int packet_id, SOCKE
         printf("A player loaded Zone (%d, %d), socket %d\n", zone_x, zone_y, socket);
 
         //Get a block vector. It will either be from an existing Zone, a Zone newly created from a file, or an empty vector
-//        std::vector<ZoneSaver::ZoneBlock*> blocks = worldContainer.LoadZoneBlocks("SERVER", zone_x, zone_y);
-//
-//        //Change this to a BLOCK_COMPRESS_PACKET
-//        for (ZoneSaver::ZoneBlock* block : blocks){
-//            SendBlockPlacePacket(socket, block->x, block->y, block->z, block->r, block->g, block->b, block->type);
-//        }
+        std::vector<ZoneSaver::ZoneBlock*> blocks = worldContainer.LoadZoneBlocks("SERVER", zone_x, zone_y);
+
+        //Change this to a BLOCK_COMPRESS_PACKET
+        for (ZoneSaver::ZoneBlock* block : blocks){
+            SendBlockPlacePacket(socket, block->x, block->y, block->z, block->r, block->g, block->b, block->type);
+        }
 
     }
 
