@@ -21,6 +21,7 @@ const unsigned int BUILDING_MOD_PACKET = 1263488066;
 const unsigned int ZONE_LOAD_PACKET = 1;
 const unsigned int ZONE_UNLOAD_PACKET = 2;
 const unsigned int BLOCK_PLACE_PACKET = 3;
+const unsigned int BLOCK_COMPRESS_PACKET = 4;
 
 
 void SendZoneLoadPacket(SOCKET socket, unsigned int zone_x, unsigned int zone_y){
@@ -95,11 +96,10 @@ unsigned int __stdcall no_shenanigans HandlePacket(unsigned int packet_id, SOCKE
     if (packet_id != BUILDING_MOD_PACKET){
         return 0;
     }
-    GameController->PrintMessage(L"Received BLOK.\n");
+    //GameController->PrintMessage(L"Received BLOK.\n");
 
     unsigned int sub_id;
     recv(socket, (char*)&sub_id, 4, 0);
-    //printf("Sub ID: %d - ", sub_id);
 
     if (sub_id == BLOCK_PLACE_PACKET)
     {
