@@ -65,13 +65,76 @@ void SendBlockPlacePacket(SOCKET socket, unsigned int x, unsigned int y, int z, 
     AddPacket(socket, buf, pkt_size);
 }
 
+void UpdateChunkAndAdjacent(unsigned int blockx, unsigned int blocky){
+    //First, update the actual chunk in question
+    const unsigned int CHUNK_SIZE_IN_BLOCKS = 32;
+    unsigned int chunkx = blockx / CHUNK_SIZE_IN_BLOCKS;
+    unsigned int chunky = blocky / CHUNK_SIZE_IN_BLOCKS;
+    GameController->UpdateChunk(chunkx, chunky);
+
+    //If a block is on the border of a chunk, update the bordering chunk too
+    //X
+    if ( (blockx % CHUNK_SIZE_IN_BLOCKS) == 0){
+        GameController->UpdateChunk(chunkx-1, chunky);
+    }
+    else if ( (blockx % CHUNK_SIZE_IN_BLOCKS) == CHUNK_SIZE_IN_BLOCKS-1){
+        GameController->UpdateChunk(chunkx+1, chunky);
+    }
+
+    //Y
+    if ( (blocky % CHUNK_SIZE_IN_BLOCKS) == 0){
+        GameController->UpdateChunk(chunkx, chunky-1);
+    }
+    else if ( (blocky % CHUNK_SIZE_IN_BLOCKS) == CHUNK_SIZE_IN_BLOCKS-1){
+        GameController->UpdateChunk(chunkx, chunky+1);
+    }
+}
+
 
 unsigned int __stdcall no_shenanigans HandlePacket(unsigned int packet_id, SOCKET socket){
-    if (packet_id == BUILDING_MOD_PACKET){
-        GameController->PrintMessage(L"Received BLOK.\n");
-        return 1;
+    if (packet_id != BUILDING_MOD_PACKET){
+        return 0;
     }
-    return 0;
+    GameController->PrintMessage(L"Received BLOK.\n");
+
+    unsigned int sub_id;
+    recv(socket, (char*)&sub_id, 4, 0);
+    //printf("Sub ID: %d - ", sub_id);
+
+    if (sub_id == BLOCK_PLACE_PACKET)
+    {
+        /*
+        Spec:
+        <4 bytes packet id>
+        <4 bytes sub id>
+        <4 bytes block x>
+        <4 bytes block y>
+        <4 bytes block z>
+        <1 byte red>
+        <1 byte green>
+        <1 byte blue>
+        <1 byte type>
+        */
+        unsigned int x;
+        unsigned int y;
+        int z;
+        unsigned char r, g, b, type;
+        recv(socket, (char*)&x, 4, 0);
+        recv(socket, (char*)&y, 4, 0);
+        recv(socket, (char*)&z, 4, 0);
+        recv(socket, (char*)&r, 1, 0);
+        recv(socket, (char*)&g, 1, 0);
+        recv(socket, (char*)&b, 1, 0);
+        recv(socket, (char*)&type, 1, 0);
+
+        GameController->world.SetBlock(x, y, z, r, g, b, type);
+
+        //update visuals
+        UpdateChunkAndAdjacent(x, y);
+
+    }
+
+    return 1;
 }
 
 void __stdcall no_shenanigans HandleReadyToSend(SOCKET socket){
@@ -117,116 +180,103 @@ void PrintHelpMessage(){
 
 }
 
-void UpdateChunkAndAdjacent(unsigned int blockx, unsigned int blocky){
-    //First, update the actual chunk in question
-    const unsigned int CHUNK_SIZE_IN_BLOCKS = 32;
-    unsigned int chunkx = blockx / CHUNK_SIZE_IN_BLOCKS;
-    unsigned int chunky = blocky / CHUNK_SIZE_IN_BLOCKS;
-    GameController->UpdateChunk(chunkx, chunky);
 
-    //If a block is on the border of a chunk, update the bordering chunk too
-    //X
-    if ( (blockx % CHUNK_SIZE_IN_BLOCKS) == 0){
-        GameController->UpdateChunk(chunkx-1, chunky);
-    }
-    else if ( (blockx % CHUNK_SIZE_IN_BLOCKS) == CHUNK_SIZE_IN_BLOCKS-1){
-        GameController->UpdateChunk(chunkx+1, chunky);
-    }
-
-    //Y
-    if ( (blocky % CHUNK_SIZE_IN_BLOCKS) == 0){
-        GameController->UpdateChunk(chunkx, chunky-1);
-    }
-    else if ( (blocky % CHUNK_SIZE_IN_BLOCKS) == CHUNK_SIZE_IN_BLOCKS-1){
-        GameController->UpdateChunk(chunkx, chunky+1);
-    }
-}
 
 void no_shenanigans ControlsChecker(){
-    unsigned char r = 255;
-    unsigned char g = 255;
-    unsigned char b = 255;
-    unsigned char type = 0;
-    while (currently_building){
-        //This is inside the loop just to make sure that it can never access GameController
-        //prior to the GameController's creation.
-        if (GameController->shutdown != 0){
-            return;
-        }
+    try {
+        unsigned char r = 255;
+        unsigned char g = 255;
+        unsigned char b = 255;
+        unsigned char type = 0;
+        while (currently_building){
+            //This is inside the loop just to make sure that it can never access GameController
+            //prior to the GameController's creation.
+            if (GameController->shutdown != 0){
+                return;
+            }
 
-        Sleep(10);
-        if (GameController->M1 > (uint8_t)0){
-            //Break block
-            Block* block = GameController->GetBlockAtCrosshair(40.0, false);
-            if (block != (Block*)nullptr){
-                unsigned int blockx = block->x;
-                unsigned int blocky = block->y;
-                int blockz = block->z;
-                r = 255;
-                g = 255;
-                b = 255;
-                type = 0;
+            Sleep(10);
+            if (GameController->M1 > (uint8_t)0){
+                //Break block
+                Block* block = GameController->GetBlockAtCrosshair(40.0, false);
+                if (block != (Block*)nullptr){
+                    unsigned int blockx = block->x;
+                    unsigned int blocky = block->y;
+                    int blockz = block->z;
+                    r = 255;
+                    g = 255;
+                    b = 255;
+                    type = 0;
 
-                GameController->world.SetBlock(block->x, block->y, block->z, r, g, b, type);
+                    GameController->world.SetBlock(block->x, block->y, block->z, r, g, b, type);
 
-                //update visuals
-                UpdateChunkAndAdjacent(blockx, blocky);
+                    //update visuals
+                    UpdateChunkAndAdjacent(blockx, blocky);
 
-                //save everything
-                worldContainer.SetBlock(block->x, block->y, block->z, r, g, b, type);
-                worldContainer.OutputFiles(GameController->world.worldName);
 
-                if (GameController->on_server){
-                    //Send build packet (or in this case, break packet)
-                    SendBlockPlacePacket(GameController->server_socket, block->x, block->y, block->z, r, g, b, type);
+                    if (GameController->on_server){
+                        //Send build packet (or in this case, break packet)
+                        SendBlockPlacePacket(GameController->server_socket, block->x, block->y, block->z, r, g, b, type);
+                    }
+                    else{
+                        //save everything
+                        worldContainer.SetBlock(block->x, block->y, block->z, r, g, b, type);
+                        worldContainer.OutputFiles(GameController->world.worldName);
+                    }
+
+                    delete block;
+                    Sleep(100);
+                }
+            }
+            else if (GameController->M2 > (uint8_t)0){
+                //Place block
+                Block* block = GameController->GetBlockAtCrosshair(40.0, true);
+                if (block != (Block*)nullptr){
+                    r = current_block_color.r;
+                    g = current_block_color.g;
+                    b = current_block_color.b;
+                    type = current_block_color.type;
+
+                    //Put block in the world
+                    GameController->world.SetBlock(block->x, block->y, block->z, r, g, b, type);
+
+                    //Update visuals
+                    UpdateChunkAndAdjacent(block->x, block->y);
+
+
+
+                    if (GameController->on_server){
+                        //Send build packet
+                        SendBlockPlacePacket(GameController->server_socket, block->x, block->y, block->z, r, g, b, type);
+                    }
+                    else{
+                        //save everything
+                        worldContainer.SetBlock(block->x, block->y, block->z, r, g, b, type);
+                        worldContainer.OutputFiles(GameController->world.worldName);
+                    }
+
+                    delete block;
+                    Sleep(100);
                 }
 
-                delete block;
-                Sleep(100);
             }
-        }
-        else if (GameController->M2 > (uint8_t)0){
-            //Place block
-            Block* block = GameController->GetBlockAtCrosshair(40.0, true);
-            if (block != (Block*)nullptr){
-                r = current_block_color.r;
-                g = current_block_color.g;
-                b = current_block_color.b;
-                type = current_block_color.type;
-
-                //Put block in the world
-                GameController->world.SetBlock(block->x, block->y, block->z, r, g, b, type);
-
-                //Update visuals
-                UpdateChunkAndAdjacent(block->x, block->y);
-
-                //save everything
-                worldContainer.SetBlock(block->x, block->y, block->z, r, g, b, type);
-                worldContainer.OutputFiles(GameController->world.worldName);
-
-                if (GameController->on_server){
-                    //Send build packet
-                    SendBlockPlacePacket(GameController->server_socket, block->x, block->y, block->z, r, g, b, type);
+            else if (GameController->M3 > (uint8_t)0){
+                Block* block = GameController->GetBlockAtCrosshair(40.0, false);
+                if (block != (Block*)nullptr){
+                    current_block_color.r = block->color.r;
+                    current_block_color.g = block->color.g;
+                    current_block_color.b = block->color.b;
+                    current_block_color.type = block->color.type;
+                    PrintSelectBlockMessage(block->color.r, block->color.g, block->color.b, block->color.type);
+                    delete block;
+                    Sleep(250);
                 }
 
-                delete block;
-                Sleep(100);
             }
-
         }
-        else if (GameController->M3 > (uint8_t)0){
-            Block* block = GameController->GetBlockAtCrosshair(40.0, false);
-            if (block != (Block*)nullptr){
-                current_block_color.r = block->color.r;
-                current_block_color.g = block->color.g;
-                current_block_color.b = block->color.b;
-                current_block_color.type = block->color.type;
-                PrintSelectBlockMessage(block->color.r, block->color.g, block->color.b, block->color.type);
-                delete block;
-                Sleep(250);
-            }
-
-        }
+    }
+    catch (...) {
+        return;
     }
 }
 
@@ -287,14 +337,15 @@ __stdcall void no_shenanigans HandleZoneLoaded(cube::Zone* zone){
     if (GameController->on_server){
         SendZoneLoadPacket(GameController->server_socket, zone->x, zone->y);
     }
+    else{
+        //Get a block vector. It will either be from an existing Zone, a Zone newly created from a file, or an empty vector
+        std::vector<ZoneSaver::ZoneBlock*> blocks = worldContainer.LoadZoneBlocks(GameController->world.worldName, zone->x, zone->y);
 
-    //Get a block vector. It will either be from an existing Zone, a Zone newly created from a file, or an empty vector
-    std::vector<ZoneSaver::ZoneBlock*> blocks = worldContainer.LoadZoneBlocks(GameController->world.worldName, zone->x, zone->y);
-
-    //Place blocks in the world and update them
-    for (ZoneSaver::ZoneBlock* block : blocks){
-        GameController->world.SetBlock(block->x, block->y, block->z, block->r, block->g, block->b, block->type);
-        UpdateChunkAndAdjacent(block->x, block->y);
+        //Place blocks in the world and update them
+        for (ZoneSaver::ZoneBlock* block : blocks){
+            GameController->world.SetBlock(block->x, block->y, block->z, block->r, block->g, block->b, block->type);
+            UpdateChunkAndAdjacent(block->x, block->y);
+        }
     }
 }
 
@@ -302,7 +353,9 @@ __stdcall void no_shenanigans HandleZoneDelete(cube::Zone* zone){
     if (GameController->on_server){
         SendZoneUnloadPacket(GameController->server_socket, zone->x, zone->y);
     }
-    worldContainer.DeleteZoneContainer(zone->x, zone->y);
+    else {
+        worldContainer.DeleteZoneContainer(zone->x, zone->y);
+    }
 }
 
 __stdcall int no_shenanigans HandleDodgeAttemptCheck(int attempting_to_dodge){

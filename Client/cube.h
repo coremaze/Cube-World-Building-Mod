@@ -147,10 +147,21 @@ namespace cube{
         unsigned int critical_section; //8000C0 ~ 8000C3
         char padding2[0x1D8]; //8000C4 ~ 80029B
 
+
+        void Lock(){
+            EnterCriticalSection((LPCRITICAL_SECTION)&this->critical_section);
+        }
+
+        void Unlock(){
+            LeaveCriticalSection((LPCRITICAL_SECTION)&this->critical_section);
+        }
+
         void SetBlock(unsigned int x, unsigned int y, int z, BlockColor* color, Zone* zone){
+            this->Lock();
             typedef void(__thiscall* cube_World_SetBlockInZone_t)(cube::World*, unsigned int, unsigned int, int, BlockColor*, cube::Zone*);
             auto cube_World_SetBlockInZone = (cube_World_SetBlockInZone_t)(imageBase + 0x4E7A0);
             cube_World_SetBlockInZone(this, x, y, z, color, zone);
+            this->Unlock();
         }
         void SetBlock(unsigned int x, unsigned int y, int z, unsigned char r, unsigned char g, unsigned char b, unsigned char type){
             BlockColor* color = new BlockColor(r, g, b, type);
@@ -165,13 +176,7 @@ namespace cube{
             return color;
         }
 
-        void Lock(){
-            EnterCriticalSection((LPCRITICAL_SECTION)&this->critical_section);
-        }
 
-        void Unlock(){
-            LeaveCriticalSection((LPCRITICAL_SECTION)&this->critical_section);
-        }
 
 
 
