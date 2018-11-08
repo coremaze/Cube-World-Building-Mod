@@ -5,6 +5,7 @@
 #include "callbacks.h"
 #include "packets.h"
 #include "zonesaver.h"
+
 unsigned int base;
 ZoneSaver::WorldContainer worldContainer;
 
@@ -12,6 +13,7 @@ const unsigned int BUILDING_MOD_PACKET = 1263488066; //hehe
 const unsigned int ZONE_LOAD_PACKET = 1;
 const unsigned int ZONE_UNLOAD_PACKET = 2;
 const unsigned int BLOCK_PLACE_PACKET = 3;
+const unsigned int BLOCK_COMPRESS_PACKET = 4;
 
 void SendBlockPlacePacket(SOCKET socket, unsigned int x, unsigned int y, int z, unsigned char r, unsigned char g, unsigned char b, unsigned char type){
     unsigned int packet_id = BUILDING_MOD_PACKET;
@@ -60,7 +62,16 @@ unsigned int __stdcall no_shenanigans HandlePacket(unsigned int packet_id, SOCKE
         unsigned int zone_y;
         recv(socket, (char*)&zone_x, 4, 0);
         recv(socket, (char*)&zone_y, 4, 0);
-        printf("A player loaded Zone (%d, %d)\n", zone_x, zone_y);
+        printf("A player loaded Zone (%d, %d), socket %d\n", zone_x, zone_y, socket);
+
+        //Get a block vector. It will either be from an existing Zone, a Zone newly created from a file, or an empty vector
+//        std::vector<ZoneSaver::ZoneBlock*> blocks = worldContainer.LoadZoneBlocks("SERVER", zone_x, zone_y);
+//
+//        //Change this to a BLOCK_COMPRESS_PACKET
+//        for (ZoneSaver::ZoneBlock* block : blocks){
+//            SendBlockPlacePacket(socket, block->x, block->y, block->z, block->r, block->g, block->b, block->type);
+//        }
+
     }
 
     else if (sub_id == ZONE_UNLOAD_PACKET)
@@ -109,10 +120,13 @@ unsigned int __stdcall no_shenanigans HandlePacket(unsigned int packet_id, SOCKE
                x, y, z, (unsigned int)r, (unsigned int)g, (unsigned int)b, (unsigned int)type);
 
         for (SOCKET s : knownSockets){
-            printf("adding packet for %d\n", s);
             SendBlockPlacePacket(s, x, y, z, r, g, b, type);
 
         }
+
+        //save everything
+        worldContainer.SetBlock(x, y, z, r, g, b, type);
+        worldContainer.OutputFiles("SERVER");
 
     }
 

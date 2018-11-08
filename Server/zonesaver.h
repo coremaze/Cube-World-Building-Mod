@@ -105,12 +105,14 @@ public:
         }
 
         //No zone created yet
-        EnterCriticalSection(&zone_saver_critical_section);
+
         ZoneContainer* zc = new ZoneContainer(zonex, zoney);
         zc->SetZoneBlock(x, y, z, r, g, b, type);
+        EnterCriticalSection(&zone_saver_critical_section);
         this->zones.push_back(zc);
-        return zc;
         LeaveCriticalSection(&zone_saver_critical_section);
+        return zc;
+
     }
 
     void OutputFiles(char worldName[]){
