@@ -4,74 +4,126 @@
 #include <iostream>
 #include "callbacks.h"
 #include "packets.h"
+#include "zonesaver.h"
 unsigned int base;
-
+ZoneSaver::WorldContainer worldContainer;
 
 const unsigned int BUILDING_MOD_PACKET = 1263488066; //hehe
 const unsigned int ZONE_LOAD_PACKET = 1;
 const unsigned int ZONE_UNLOAD_PACKET = 2;
 const unsigned int BLOCK_PLACE_PACKET = 3;
 
-unsigned int __stdcall no_shenanigans HandlePacket(unsigned int packet_id, SOCKET socket){
+void SendBlockPlacePacket(SOCKET socket, unsigned int x, unsigned int y, int z, unsigned char r, unsigned char g, unsigned char b, unsigned char type){
+    unsigned int packet_id = BUILDING_MOD_PACKET;
+    unsigned int sub_id = BLOCK_PLACE_PACKET;
+    unsigned int pkt_size = 4 + 4 + 4 + 4 + 4 + 1 + 1 + 1 + 1;
 
-//    if (packet_id == 10){
-//        printf("Packet ID: %d\n", packet_id);
-//        char buf[4] = { 0 };
-//        memcpy(buf, &BUILDING_MOD_PACKET, 4);
-//        AddPacket(socket, buf, 4);
-//    }
+    char buf[pkt_size] = {0};
+    memcpy(buf     , &packet_id, 4);
+    memcpy(buf +  4, &sub_id   , 4);
+    memcpy(buf +  8, &x        , 4);
+    memcpy(buf + 12, &y        , 4);
+    memcpy(buf + 16, &z        , 4);
+    memcpy(buf + 20, &r        , 1);
+    memcpy(buf + 21, &g        , 1);
+    memcpy(buf + 22, &b        , 1);
+    memcpy(buf + 23, &type     , 1);
+    AddPacket(socket, buf, pkt_size);
+}
 
-    if (packet_id == BUILDING_MOD_PACKET){
-        unsigned int sub_id;
-        recv(socket, (char*)&sub_id, 4, 0);
-        printf("Sub ID: %d\n", sub_id);
+unsigned int __stdcall no_shenanigans HandlePacket(unsigned int packet_id, SOCKET socket)
+{
+    AddSocket(socket);
 
-        if (sub_id == ZONE_LOAD_PACKET){
-            unsigned int zone_x;
-            unsigned int zone_y;
-            recv(socket, (char*)&zone_x, 4, 0);
-            recv(socket, (char*)&zone_y, 4, 0);
-            printf("A player loaded Zone (%d, %d)\n", zone_x, zone_y);
+    //Only want to deal with building mod packets.
+    if (packet_id != BUILDING_MOD_PACKET)
+    {
+        return 0;
+    }
+
+    //All packets for this mod shall have the same initial packet ID,
+    //however, immediately after they will have another ID to distinguish themselves.
+    unsigned int sub_id;
+    recv(socket, (char*)&sub_id, 4, 0);
+    printf("Sub ID: %d - ", sub_id);
+
+    if (sub_id == ZONE_LOAD_PACKET)
+    {
+        /*
+        Spec:
+        <4 bytes packet id>
+        <4 bytes sub id>
+        <4 bytes zone x>
+        <4 bytes zone y>
+        */
+        unsigned int zone_x;
+        unsigned int zone_y;
+        recv(socket, (char*)&zone_x, 4, 0);
+        recv(socket, (char*)&zone_y, 4, 0);
+        printf("A player loaded Zone (%d, %d)\n", zone_x, zone_y);
+    }
+
+    else if (sub_id == ZONE_UNLOAD_PACKET)
+    {
+        /*
+        Spec:
+        <4 bytes packet id>
+        <4 bytes sub id>
+        <4 bytes zone x>
+        <4 bytes zone y>
+        */
+        unsigned int zone_x;
+        unsigned int zone_y;
+        recv(socket, (char*)&zone_x, 4, 0);
+        recv(socket, (char*)&zone_y, 4, 0);
+        printf("A player unloaded Zone (%d, %d)\n", zone_x, zone_y);
+    }
+
+    else if (sub_id == BLOCK_PLACE_PACKET)
+    {
+        /*
+        Spec:
+        <4 bytes packet id>
+        <4 bytes sub id>
+        <4 bytes block x>
+        <4 bytes block y>
+        <4 bytes block z>
+        <1 byte red>
+        <1 byte green>
+        <1 byte blue>
+        <1 byte type>
+        */
+        unsigned int x;
+        unsigned int y;
+        int z;
+        unsigned char r, g, b, type;
+        recv(socket, (char*)&x, 4, 0);
+        recv(socket, (char*)&y, 4, 0);
+        recv(socket, (char*)&z, 4, 0);
+        recv(socket, (char*)&r, 1, 0);
+        recv(socket, (char*)&g, 1, 0);
+        recv(socket, (char*)&b, 1, 0);
+        recv(socket, (char*)&type, 1, 0);
+
+        printf("A player placed a block at (%d, %d, %d) of type %u %u %u %u\n",
+               x, y, z, (unsigned int)r, (unsigned int)g, (unsigned int)b, (unsigned int)type);
+
+        for (SOCKET s : knownSockets){
+            printf("adding packet for %d\n", s);
+            SendBlockPlacePacket(s, x, y, z, r, g, b, type);
+
         }
-
-        else if (sub_id == ZONE_UNLOAD_PACKET){
-            unsigned int zone_x;
-            unsigned int zone_y;
-            recv(socket, (char*)&zone_x, 4, 0);
-            recv(socket, (char*)&zone_y, 4, 0);
-            printf("A player unloaded Zone (%d, %d)\n", zone_x, zone_y);
-        }
-
-        else if (sub_id == BLOCK_PLACE_PACKET){
-            unsigned int x;
-            unsigned int y;
-            int z;
-            unsigned char r, g, b, type;
-            recv(socket, (char*)&x, 4, 0);
-            recv(socket, (char*)&y, 4, 0);
-            recv(socket, (char*)&z, 4, 0);
-            recv(socket, (char*)&r, 1, 0);
-            recv(socket, (char*)&g, 1, 0);
-            recv(socket, (char*)&b, 1, 0);
-            recv(socket, (char*)&type, 1, 0);
-
-            printf("A player placed a block at (%d, %d, %d) of type ", x, y, z);
-            //printf("of type %u %u %u %u\n", (unsigned int)r, (unsigned int)g, (unsigned int)b, (unsigned int)type);
-            std::cout << (unsigned int)r << " " << (unsigned int)g << " " << (unsigned int)b << " " << (unsigned int)type << "\n";
-
-        }
-
-        return 1;
-
 
     }
 
+    printf("I know about %d sockets.\n", knownSockets.size());
+    for (SOCKET s : knownSockets){
+        printf("%u, ", s);
+    }
+    printf("\n");
 
-    return 0;
+    return 1;
 }
-
-
-
 
 void __stdcall no_shenanigans HandleReadyToSend(SOCKET socket){
     SendQueuedPackets(socket);
@@ -93,7 +145,8 @@ extern "C" no_shenanigans bool APIENTRY DllMain(HINSTANCE hinstDLL, DWORD fdwRea
     switch (fdwReason)
     {
         case DLL_PROCESS_ATTACH:
-            PacketQueueInit();
+            PacketsInit();
+            InitZoneSaver();
             CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)RegisterCallbacks, 0, 0, NULL);
             break;
     }
