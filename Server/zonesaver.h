@@ -13,6 +13,17 @@ void InitZoneSaver(){
 
 namespace ZoneSaver{
 
+void GetServerSaveName(char* buf){
+    //File for this Zone
+    const char serverPrefix[] = "SERVER_";
+    memcpy(buf, serverPrefix, sizeof(serverPrefix));
+    std::ifstream file("server.cfg", std::ios::in | std::ios::binary | std::ios::ate);
+    std::streampos fsize = file.tellg();
+    file.seekg(0, std::ios::beg);
+    file.read(buf + sizeof(serverPrefix)-1, fsize);
+    file.close();
+}
+
 class ZoneBlock{
 public:
     unsigned int x, y;
@@ -206,6 +217,18 @@ public:
                     return true;
                 }
 
+            }
+        }
+        LeaveCriticalSection(&zone_saver_critical_section);
+        return false;
+    }
+
+    bool HasZoneContainer(unsigned int zone_x, unsigned int zone_y){
+        EnterCriticalSection(&zone_saver_critical_section);
+        for (ZoneContainer* zone : this->zones){
+            if (zone->zone_x == zone_x && zone->zone_y == zone_y){
+                LeaveCriticalSection(&zone_saver_critical_section);
+                return true;
             }
         }
         LeaveCriticalSection(&zone_saver_critical_section);

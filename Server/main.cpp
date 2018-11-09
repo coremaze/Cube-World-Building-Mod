@@ -6,8 +6,26 @@
 #include "packets.h"
 #include "zonesaver.h"
 
+class BlockColor{
+public:
+    unsigned char r, g, b, type;
+    BlockColor(unsigned char _r, unsigned char _g, unsigned char _b, unsigned char _t){
+        this->r = _r;
+        this->g = _g;
+        this->b = _b;
+        this->type = _t;
+    }
+};
+
 unsigned int base;
 ZoneSaver::WorldContainer worldContainer;
+unsigned int world_ptr;
+char serverWorldName[256];
+
+typedef void(__thiscall* cube_World_SetBlockInZone_t)(unsigned int, unsigned int, unsigned int, int, BlockColor*, unsigned int);
+cube_World_SetBlockInZone_t cube_World_SetBlockInZone;
+
+
 
 const unsigned int BUILDING_MOD_PACKET = 1263488066; //hehe
 const unsigned int ZONE_LOAD_PACKET = 1;
@@ -65,12 +83,25 @@ unsigned int __stdcall no_shenanigans HandlePacket(unsigned int packet_id, SOCKE
         printf("A player loaded Zone (%d, %d), socket %d\n", zone_x, zone_y, socket);
 
         //Get a block vector. It will either be from an existing Zone, a Zone newly created from a file, or an empty vector
-        std::vector<ZoneSaver::ZoneBlock*> blocks = worldContainer.LoadZoneBlocks("SERVER", zone_x, zone_y);
+        std::vector<ZoneSaver::ZoneBlock*> blocks = worldContainer.LoadZoneBlocks(serverWorldName, zone_x, zone_y);
 
         //Change this to a BLOCK_COMPRESS_PACKET
         for (ZoneSaver::ZoneBlock* block : blocks){
             SendBlockPlacePacket(socket, block->x, block->y, block->z, block->r, block->g, block->b, block->type);
+
+            BlockColor* color = new BlockColor(block->r, block->g, block->b, block->type);
+            cube_World_SetBlockInZone(world_ptr, block->x, block->y, block->z, color, NULL);
+            delete color;
         }
+
+        //For some reason I have to do this twice to get visuals to stop glitching
+        for (ZoneSaver::ZoneBlock* block : blocks){
+            BlockColor* color = new BlockColor(block->r, block->g, block->b, block->type);
+            cube_World_SetBlockInZone(world_ptr, block->x, block->y, block->z, color, NULL);
+            delete color;
+        }
+
+
 
     }
 
@@ -124,9 +155,32 @@ unsigned int __stdcall no_shenanigans HandlePacket(unsigned int packet_id, SOCKE
 
         }
 
+
+        /*
+        Unlike in the client, it's possible that a player could send a BLOCK_PLACE_PACKET
+        without first sending a ZONE_LOAD_PACKET. If this happens without handling this,
+        it could overwrite the CWB file for that entire zone.
+        */
+        unsigned int zone_x = x/256;
+        unsigned int zone_y = y/256;
+        if (!worldContainer.HasZoneContainer(zone_x, zone_y)){
+            std::vector<ZoneSaver::ZoneBlock*> blocks = worldContainer.LoadZoneBlocks(serverWorldName, zone_x, zone_y);
+
+            for (ZoneSaver::ZoneBlock* block : blocks){
+                BlockColor* color = new BlockColor(block->r, block->g, block->b, block->type);
+                cube_World_SetBlockInZone(world_ptr, block->x, block->y, block->z, color, NULL);
+                delete color;
+            }
+        }
+
+
         //save everything
         worldContainer.SetBlock(x, y, z, r, g, b, type);
-        worldContainer.OutputFiles("SERVER");
+        worldContainer.OutputFiles(serverWorldName);
+
+        BlockColor* color = new BlockColor(r, g, b, type);
+        cube_World_SetBlockInZone(world_ptr, x, y, z, color, NULL);
+        delete color;
 
     }
 
@@ -143,11 +197,17 @@ void __stdcall no_shenanigans HandleReadyToSend(SOCKET socket){
     SendQueuedPackets(socket);
 }
 
+void __stdcall no_shenanigans HandleWorldCreated(unsigned int w_ptr){
+    world_ptr = w_ptr;
+    //printf("World created: %X", world_ptr);
+}
+
 
 DWORD WINAPI no_shenanigans RegisterCallbacks(){
 
         RegisterCallback("RegisterPacketCallback", HandlePacket);
         RegisterCallback("RegisterReadyToSendCallback", HandleReadyToSend);
+        RegisterCallback("RegisterWorldCreatedCallback", HandleWorldCreated);
 
         return 0;
 }
@@ -155,12 +215,15 @@ DWORD WINAPI no_shenanigans RegisterCallbacks(){
 extern "C" no_shenanigans bool APIENTRY DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 {
     base = (unsigned int)GetModuleHandle(NULL);
-
     switch (fdwReason)
     {
         case DLL_PROCESS_ATTACH:
             PacketsInit();
             InitZoneSaver();
+
+            cube_World_SetBlockInZone = (cube_World_SetBlockInZone_t)(base + 0x1FF00);
+
+            ZoneSaver::GetServerSaveName(serverWorldName);
             CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)RegisterCallbacks, 0, 0, NULL);
             break;
     }
