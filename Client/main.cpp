@@ -272,7 +272,16 @@ void no_shenanigans ControlsChecker(){
                     There are blocks in the game which you are not allowed to destroy,
                     such as ocean water blocks. This will prevent the user from placing those.
                     */
-                    unsigned int type = (block->color.type & 0b00111111) % 4;
+                    unsigned int type;
+                    if ((block->color.type & 0b00111111) == 2){ //block is water
+                        type = 2;
+                    }
+                    else if ((block->color.type & 0b00111111) == 3){ //block is a solid wet block
+                        type = 3;
+                    }
+                    else {
+                        type = 1;
+                    }
 
                     current_block_color.type = type;
                     PrintSelectBlockMessage(block->color.r, block->color.g, block->color.b, type);
