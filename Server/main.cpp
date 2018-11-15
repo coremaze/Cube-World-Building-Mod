@@ -184,11 +184,11 @@ unsigned int __stdcall no_shenanigans HandlePacket(unsigned int packet_id, SOCKE
 
     }
 
-    printf("I know about %d sockets.\n", knownSockets.size());
-    for (SOCKET s : knownSockets){
-        printf("%u, ", s);
-    }
-    printf("\n");
+//    printf("I know about %d sockets.\n", knownSockets.size());
+//    for (SOCKET s : knownSockets){
+//        printf("%u, ", s);
+//    }
+//    printf("\n");
 
     return 1;
 }
