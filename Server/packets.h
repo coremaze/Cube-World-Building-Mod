@@ -62,7 +62,7 @@ void AddPacket(SOCKET socket, char* data, unsigned int data_size){
 }
 
 void SendQueuedPackets(SOCKET socket){
-    AddSocket(socket);
+    //AddSocket(socket);
     EnterCriticalSection(&packet_queue_critical_section);
 
     std::vector<QueuePacket*>::iterator iter = packetQueue.begin();

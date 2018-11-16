@@ -53,13 +53,15 @@ void SendBlockPlacePacket(SOCKET socket, unsigned int x, unsigned int y, int z, 
 
 unsigned int __stdcall no_shenanigans HandlePacket(unsigned int packet_id, SOCKET socket)
 {
-    AddSocket(socket);
-
     //Only want to deal with building mod packets.
     if (packet_id != BUILDING_MOD_PACKET)
     {
         return 0;
     }
+
+    //Let's only keep track of all the sockets which are using the mod.
+    //This will let non-modded clients connect without breaking them.
+    AddSocket(socket);
 
     //All packets for this mod shall have the same initial packet ID,
     //however, immediately after they will have another ID to distinguish themselves.
@@ -202,12 +204,17 @@ void __stdcall no_shenanigans HandleWorldCreated(unsigned int w_ptr){
     //printf("World created: %X", world_ptr);
 }
 
+void __stdcall no_shenanigans HandlePlayerDisconnect(SOCKET socket){
+    PurgeSocket(socket);
+}
+
 
 DWORD WINAPI no_shenanigans RegisterCallbacks(){
 
         RegisterCallback("RegisterPacketCallback", HandlePacket);
         RegisterCallback("RegisterReadyToSendCallback", HandleReadyToSend);
         RegisterCallback("RegisterWorldCreatedCallback", HandleWorldCreated);
+        RegisterCallback("RegisterPlayerDisconnectCallback", HandlePlayerDisconnect);
 
         return 0;
 }
