@@ -208,6 +208,13 @@ void __stdcall no_shenanigans HandlePlayerDisconnect(SOCKET socket){
     PurgeSocket(socket);
 }
 
+void __stdcall no_shenanigans HandlePlayerConnect(SOCKET socket){
+    //printf("Socket %d logged in.\n", socket);
+    //This is here in case a player disconnects in a strange way,
+    //or if there is an exception that caused an old socket to not get purged.
+    //This socket will be re-added once they send a building mod packet.
+    PurgeSocket(socket);
+}
 
 DWORD WINAPI no_shenanigans RegisterCallbacks(){
 
@@ -215,6 +222,7 @@ DWORD WINAPI no_shenanigans RegisterCallbacks(){
         RegisterCallback("RegisterReadyToSendCallback", HandleReadyToSend);
         RegisterCallback("RegisterWorldCreatedCallback", HandleWorldCreated);
         RegisterCallback("RegisterPlayerDisconnectCallback", HandlePlayerDisconnect);
+        RegisterCallback("RegisterPlayerConnectCallback", HandlePlayerConnect);
 
         return 0;
 }
