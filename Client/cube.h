@@ -145,14 +145,22 @@ namespace cube{
         char worldName[0x10]; //94 ~ A3
         char padding1[0x80001C]; //A4 ~ 8000BF
         unsigned int critical_section; //8000C0 ~ 8000C3
-        char padding2[0x1D8]; //8000C4 ~ 80029B
+        int field_8000C4; //8000C4 ~ 8000C7
+        int field_8000C8; //8000C8 ~ 8000CB
+        int field_8000CC; //8000CC ~ 8000CF
+        int field_8000D0; //8000D0 ~ 8000D3
+        int field_8000D4; //8000D4 ~ 8000D7
+        unsigned int critical_section2; //8000D8 ~ 8000DB
+        char padding2[0x1C0]; //8000DC ~ 80029B
 
 
         void Lock(){
             EnterCriticalSection((LPCRITICAL_SECTION)&this->critical_section);
+            EnterCriticalSection((LPCRITICAL_SECTION)&this->critical_section2);
         }
 
         void Unlock(){
+            LeaveCriticalSection((LPCRITICAL_SECTION)&this->critical_section2);
             LeaveCriticalSection((LPCRITICAL_SECTION)&this->critical_section);
         }
 
