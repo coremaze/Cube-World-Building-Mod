@@ -196,6 +196,40 @@ void no_shenanigans ControlsChecker(){
             }
 
             Sleep(10);
+//            //paint
+//            if (GameController->M1 && GameController->key_LeftShift){
+//                Block* block = GameController->GetBlockAtCrosshair(40.0, false);
+//                if (block != (Block*)nullptr){
+//                    unsigned int blockx = block->x;
+//                    unsigned int blocky = block->y;
+//                    int blockz = block->z;
+//                    r = current_block_color.r;
+//                    g = current_block_color.g;
+//                    b = current_block_color.b;
+//                    type = current_block_color.type;
+//
+//                    GameController->world.SetBlock(block->x, block->y, block->z, r, g, b, type);
+//
+//                    //update visuals
+//                    UpdateChunkAndAdjacent(blockx, blocky);
+//
+//
+//                    if (GameController->on_server){
+//                        //Send build packet
+//                        SendBlockPlacePacket(GameController->server_socket, block->x, block->y, block->z, r, g, b, type);
+//                    }
+//                    else{
+//                        //save everything
+//                        worldContainer.SetBlock(block->x, block->y, block->z, r, g, b, type);
+//                        worldContainer.OutputFiles(GameController->world.worldName);
+//                    }
+//
+//                    delete block;
+//                    Sleep(100);
+//                }
+//            }
+//            else
+
             if (GameController->M1 > (uint8_t)0){
                 //Break block
                 Block* block = GameController->GetBlockAtCrosshair(40.0, false);

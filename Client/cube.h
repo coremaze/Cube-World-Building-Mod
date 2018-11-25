@@ -155,13 +155,13 @@ namespace cube{
 
 
         void Lock(){
-            EnterCriticalSection((LPCRITICAL_SECTION)&this->critical_section);
             EnterCriticalSection((LPCRITICAL_SECTION)&this->critical_section2);
+            EnterCriticalSection((LPCRITICAL_SECTION)&this->critical_section);
         }
 
         void Unlock(){
-            LeaveCriticalSection((LPCRITICAL_SECTION)&this->critical_section2);
             LeaveCriticalSection((LPCRITICAL_SECTION)&this->critical_section);
+            LeaveCriticalSection((LPCRITICAL_SECTION)&this->critical_section2);
         }
 
         void SetBlock(unsigned int x, unsigned int y, int z, BlockColor* color, Zone* zone){
