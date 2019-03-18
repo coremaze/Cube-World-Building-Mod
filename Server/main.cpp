@@ -2,6 +2,7 @@
 #define no_shenanigans __attribute__((noinline)) __declspec(dllexport)
 #include <windows.h>
 #include <iostream>
+#include "zlib.h"
 #include "callbacks.h"
 #include "packets.h"
 #include "zonesaver.h"
@@ -51,6 +52,52 @@ void SendBlockPlacePacket(SOCKET socket, unsigned int x, unsigned int y, int z, 
     AddPacket(socket, buf, pkt_size);
 }
 
+void SendBlockCompressPacket(SOCKET socket, std::vector<ZoneSaver::ZoneBlock*>* blocks){
+    unsigned int num_blocks = blocks->size();
+    unsigned int packet_ID = BUILDING_MOD_PACKET;
+    unsigned int sub_id = BLOCK_COMPRESS_PACKET;
+    unsigned int BLOCK_SIZE = 4 + 4 + 4 + 1 + 1 + 1 + 1;
+
+
+    //make block data
+    unsigned int block_data_size = BLOCK_SIZE * num_blocks;
+    char* block_buf = new char[block_data_size];
+
+    unsigned int i = 0;
+    for (ZoneSaver::ZoneBlock* block : *blocks){
+        memcpy(block_buf + i + 0,  &block->x, 4);
+        memcpy(block_buf + i + 4,  &block->y, 4);
+        memcpy(block_buf + i + 8,  &block->z, 4);
+        memcpy(block_buf + i + 12, &block->r, 1);
+        memcpy(block_buf + i + 13, &block->g, 1);
+        memcpy(block_buf + i + 14, &block->b, 1);
+        memcpy(block_buf + i + 15, &block->type, 1);
+        i += BLOCK_SIZE;
+    }
+
+    //compress data
+    unsigned int compressed_data_size = ((float)block_data_size * 1.1) + 12.0;
+    char* compressed_data = new char[compressed_data_size];
+    if (int err = compress(compressed_data, &compressed_data_size, block_buf, block_data_size)){
+        printf("Failed to compress data: error %d\n", err);
+    }
+
+
+    //build packet
+    unsigned int pkt_size = 4 + 4 + 4 + 4 + compressed_data_size;
+    char* pkt_buf = new char[pkt_size];
+    memcpy(pkt_buf    , &packet_ID, 4);
+    memcpy(pkt_buf + 4, &sub_id   , 4);
+    memcpy(pkt_buf + 8, &block_data_size, 4);
+    memcpy(pkt_buf + 12, &compressed_data_size, 4);
+    memcpy(pkt_buf + 16, compressed_data, compressed_data_size);
+    AddPacket(socket, pkt_buf, pkt_size);
+
+    delete[] compressed_data;
+    delete[] block_buf;
+    delete[] pkt_buf;
+}
+
 unsigned int __stdcall no_shenanigans HandlePacket(unsigned int packet_id, SOCKET socket)
 {
     //Only want to deal with building mod packets.
@@ -87,10 +134,24 @@ unsigned int __stdcall no_shenanigans HandlePacket(unsigned int packet_id, SOCKE
         //Get a block vector. It will either be from an existing Zone, a Zone newly created from a file, or an empty vector
         std::vector<ZoneSaver::ZoneBlock*> blocks = worldContainer.LoadZoneBlocks(serverWorldName, zone_x, zone_y);
 
-        //Change this to a BLOCK_COMPRESS_PACKET
-        for (ZoneSaver::ZoneBlock* block : blocks){
-            SendBlockPlacePacket(socket, block->x, block->y, block->z, block->r, block->g, block->b, block->type);
+        //Limit number of blocks in each packet
+        std::vector<ZoneSaver::ZoneBlock*> blocks_segment;
 
+        for (ZoneSaver::ZoneBlock* block : blocks){
+            blocks_segment.push_back(block);
+            if (blocks_segment.size() == 100){
+                SendBlockCompressPacket(socket, &blocks_segment);
+                blocks_segment.clear();
+            }
+        }
+        if (blocks_segment.size()){
+            SendBlockCompressPacket(socket, &blocks_segment);
+            blocks_segment.clear();
+        }
+
+
+
+        for (ZoneSaver::ZoneBlock* block : blocks){
             BlockColor* color = new BlockColor(block->r, block->g, block->b, block->type);
             cube_World_SetBlockInZone(world_ptr, block->x, block->y, block->z, color, NULL);
             delete color;
@@ -233,6 +294,7 @@ extern "C" no_shenanigans bool APIENTRY DllMain(HINSTANCE hinstDLL, DWORD fdwRea
     switch (fdwReason)
     {
         case DLL_PROCESS_ATTACH:
+            zlib_init();
             PacketsInit();
             InitZoneSaver();
 
