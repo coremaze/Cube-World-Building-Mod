@@ -1,6 +1,7 @@
 #undef __STRICT_ANSI__
 #include <windows.h>
 #include <iostream>
+#include "zlib.h"
 #include "cube.h"
 #include "zonesaver.h"
 #include "callbacks.h"
@@ -127,11 +128,68 @@ unsigned int __stdcall no_shenanigans HandlePacket(unsigned int packet_id, SOCKE
         recv(socket, (char*)&b, 1, 0);
         recv(socket, (char*)&type, 1, 0);
 
+        GameController->world.Lock();
         GameController->world.SetBlock(x, y, z, r, g, b, type);
+        GameController->world.Unlock();
 
         //update visuals
         UpdateChunkAndAdjacent(x, y);
 
+    }
+    else if (sub_id == BLOCK_COMPRESS_PACKET){
+        /*
+        Spec:
+        <4 bytes packet id>
+        <4 bytes sub id>
+        <4 bytes decompressed data size>
+        <4 bytes compressed data size>
+        <compressed data size bytes compressed data>
+            compressed data is an array of blocks
+        */
+        unsigned int BLOCK_SIZE = 4 + 4 + 4 + 1 + 1 + 1 + 1;
+        unsigned int compressed_data_size;
+        unsigned int block_data_size;
+
+        recv(socket, (char*)&block_data_size, 4, 0);
+        recv(socket, (char*)&compressed_data_size, 4, 0);
+
+        char* compressed_data = new char[compressed_data_size];
+        recv(socket, compressed_data, compressed_data_size, 0);
+
+        char* block_data = new char[block_data_size];
+        if (int err = uncompress(block_data, &block_data_size, compressed_data, compressed_data_size)){
+            wchar_t message[256];
+            swprintf(message, L"Failed to uncompress data of size %d, %d: %d\n", block_data_size, compressed_data_size, err);
+            GameController->PrintMessage(message);
+            delete[] compressed_data;
+            delete[] block_data;
+            return 1;
+        }
+
+
+        GameController->world.Lock();
+        for (int i = 0; i<block_data_size; i+=BLOCK_SIZE){
+            unsigned int x;
+            unsigned int y;
+            int z;
+            unsigned char r, g, b, type;
+            memcpy(&x, block_data + i + 0, 4);
+            memcpy(&y, block_data + i + 4, 4);
+            memcpy(&z, block_data + i + 8, 4);
+            memcpy(&r, block_data + i + 12, 1);
+            memcpy(&g, block_data + i + 13, 1);
+            memcpy(&b, block_data + i + 14, 1);
+            memcpy(&type, block_data + i + 15, 1);
+
+            GameController->world.SetBlock(x, y, z, r, g, b, type);
+
+
+            //update visuals
+            UpdateChunkAndAdjacent(x, y);
+        }
+        GameController->world.Unlock();
+        delete[] compressed_data;
+        delete[] block_data;
     }
 
     return 1;
@@ -242,7 +300,9 @@ void no_shenanigans ControlsChecker(){
                     b = 255;
                     type = 0;
 
+                    GameController->world.Lock();
                     GameController->world.SetBlock(block->x, block->y, block->z, r, g, b, type);
+                    GameController->world.Unlock();
 
                     //update visuals
                     UpdateChunkAndAdjacent(blockx, blocky);
@@ -272,7 +332,9 @@ void no_shenanigans ControlsChecker(){
                     type = current_block_color.type;
 
                     //Put block in the world
+                    GameController->world.Lock();
                     GameController->world.SetBlock(block->x, block->y, block->z, r, g, b, type);
+                    GameController->world.Unlock();
 
                     //Update visuals
                     UpdateChunkAndAdjacent(block->x, block->y);
@@ -457,6 +519,7 @@ extern "C" no_shenanigans BOOL APIENTRY DllMain(HINSTANCE hinstDLL, DWORD fdwRea
     switch (fdwReason)
     {
         case DLL_PROCESS_ATTACH:
+            zlib_init();
             PacketQueueInit();
             CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)RegisterCallbacks, 0, 0, NULL);
             break;

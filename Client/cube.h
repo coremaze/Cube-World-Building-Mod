@@ -82,6 +82,18 @@ public:
     }
 };
 
+class AdaptionItem{
+public:
+    int field_0;
+    int field_4;
+    int field_8;
+    uint8_t rarity; //definitely 8 bits
+    uint8_t field_D;
+    uint8_t field_E;
+    uint8_t field_F;
+    uint16_t level; //Definitely 16 bits
+};
+
 
 Color ASMPrintMessage_defaultColor = Color(1.0, 1.0, 1.0, 1.0);
 DWORD ASMPrintMessage_defaultColorPtr = (DWORD)&ASMPrintMessage_defaultColor;
@@ -165,11 +177,9 @@ namespace cube{
         }
 
         void SetBlock(unsigned int x, unsigned int y, int z, BlockColor* color, Zone* zone){
-            this->Lock();
             typedef void(__thiscall* cube_World_SetBlockInZone_t)(cube::World*, unsigned int, unsigned int, int, BlockColor*, cube::Zone*);
             auto cube_World_SetBlockInZone = (cube_World_SetBlockInZone_t)(imageBase + 0x4E7A0);
             cube_World_SetBlockInZone(this, x, y, z, color, zone);
-            this->Unlock();
         }
         void SetBlock(unsigned int x, unsigned int y, int z, unsigned char r, unsigned char g, unsigned char b, unsigned char type){
             BlockColor* color = new BlockColor(r, g, b, type);
@@ -248,6 +258,7 @@ namespace cube{
         uint8_t on_server; //800585
         char padding2[0x143]; //800589 ~ 8006CB
         SOCKET server_socket; //0x8006CC
+        cube::Creature* local_player;
 
         void UpdateChunk(unsigned int chunk_x, unsigned int chunk_y){
             //the dimensions are stored as a side length. Must square to get total number of chunks.
@@ -427,6 +438,21 @@ namespace cube{
         char padding0[0x60];
         unsigned int x;
         unsigned int y;
+    };
+
+    class AdaptionWidget{
+    public:
+        unsigned int vtable;
+        uint8_t field_4[360];
+        GameController* gamecontroller;
+
+        AdaptionItem* GetWeapon(){
+            typedef AdaptionItem*(__thiscall* cube_AdaptionWidget_GetWeapon_t)(AdaptionWidget*);
+            auto cube_AdaptionWidget_GetWeapon = (cube_AdaptionWidget_GetWeapon_t)(imageBase + 0xF570);
+            return cube_AdaptionWidget_GetWeapon(this);
+        }
+
+
     };
 
 
