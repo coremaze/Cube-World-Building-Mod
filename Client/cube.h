@@ -330,7 +330,7 @@ namespace cube{
             return player;
         }
 
-        Block* no_shenanigans GetBlockAtCrosshair(float reach_in_blocks_from_camera, bool want_face_block){
+        Block* no_shenanigans GetBlockAtCrosshair(float reach_in_blocks_from_camera, bool want_face_block, bool cast_through_water=false){
             Creature* player = this->GetLocalPlayer();
             //Calculate the direction the camera is in
             float yaw = degrees_to_radians(this->cameraYaw + 90.0);
@@ -378,14 +378,18 @@ namespace cube{
                 //Figure out what's in the new location
                 BlockColor* color = this->world.GetBlock(blockx, blocky, blockz, (cube::Zone*)nullptr);
                 if ((color->type & 0b00111111) != 0){ //If the block is not an air block
-                    withinReach = true;
-                    if (want_face_block){
-                        //If you want the face block, change the block coords to whatever was seen last time. ie, go back one.
-                        blockx = lastblockx;
-                        blocky = lastblocky;
-                        blockz = lastblockz;
+                    // Check if casting through water also
+                    bool should_skip = (cast_through_water && (color->type & 0b00111111) == 2);
+                    if(!should_skip){
+                        withinReach = true;
+                        if (want_face_block){
+                            //If you want the face block, change the block coords to whatever was seen last time. ie, go back one.
+                            blockx = lastblockx;
+                            blocky = lastblocky;
+                            blockz = lastblockz;
+                        }
+                        break; //Leave loop if successfully hit a block
                     }
-                    break; //Leave loop if successfully hit a block
                 }
                 //Move the position back a tiny bit
                 camera_x -= (long long int)(camera_x_direction * raycast_precision);

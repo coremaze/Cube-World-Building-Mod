@@ -1,14 +1,17 @@
 #undef __STRICT_ANSI__
 #include <windows.h>
+#include <winsock2.h>
 #include <iostream>
 #include "zlib.h"
 #include "cube.h"
 #include "zonesaver.h"
 #include "callbacks.h"
 #include <vector>
+#include <sstream>
 #include "packets.h"
 
 #define no_shenanigans __attribute__((noinline)) __declspec(dllexport)
+#define DLL_EXPORT extern "C" __declspec(dllexport) __cdecl
 
 UINT_PTR base;
 cube::GameController* GameController;
@@ -16,6 +19,7 @@ ZoneSaver::WorldContainer worldContainer;
 
 BlockColor current_block_color = BlockColor(255, 255, 255, 1);
 bool currently_building = false;
+bool building_underwater = false;
 
 //packets
 const unsigned int BUILDING_MOD_PACKET = 1263488066;
@@ -23,6 +27,19 @@ const unsigned int ZONE_LOAD_PACKET = 1;
 const unsigned int ZONE_UNLOAD_PACKET = 2;
 const unsigned int BLOCK_PLACE_PACKET = 3;
 const unsigned int BLOCK_COMPRESS_PACKET = 4;
+
+// DLL API
+DLL_EXPORT bool* GetCurrentlyBuilding(){
+    return &currently_building;
+}
+
+DLL_EXPORT BlockColor* GetCurrentBlockColorType(){
+    return &current_block_color;
+}
+
+DLL_EXPORT bool* GetBuildingUnderwater(){
+    return &building_underwater;
+}
 
 
 void SendZoneLoadPacket(SOCKET socket, unsigned int zone_x, unsigned int zone_y){
@@ -201,7 +218,7 @@ void __stdcall no_shenanigans HandleReadyToSend(SOCKET socket){
 
 
 
-void PrintSelectBlockMessage(unsigned char r, unsigned char g, unsigned char b, unsigned char type){
+DLL_EXPORT void PrintSelectBlockMessage(unsigned char r, unsigned char g, unsigned char b, unsigned char type){
     wchar_t response[256];
     if ((type & 0b00111111) == 2){ //block is water
         GameController->PrintMessage(L"Selected water block.\n", 135, 206, 250);
@@ -235,6 +252,7 @@ void PrintHelpMessage(){
     PrintCommand(L"/build water", L"Select a water block.");
     PrintCommand(L"/build wet", L"Change current block to wet.");
     PrintCommand(L"/build dry", L"Change current block to normal.");
+    PrintCommand(L"/build underwater", L"Toggle underwater building.");
 
 }
 
@@ -290,7 +308,7 @@ void no_shenanigans ControlsChecker(){
 
             if (GameController->M1 > (uint8_t)0){
                 //Break block
-                Block* block = GameController->GetBlockAtCrosshair(40.0, false);
+                Block* block = GameController->GetBlockAtCrosshair(40.0, false, building_underwater);
                 if (block != (Block*)nullptr){
                     unsigned int blockx = block->x;
                     unsigned int blocky = block->y;
@@ -324,7 +342,7 @@ void no_shenanigans ControlsChecker(){
             }
             else if (GameController->M2 > (uint8_t)0){
                 //Place block
-                Block* block = GameController->GetBlockAtCrosshair(40.0, true);
+                Block* block = GameController->GetBlockAtCrosshair(40.0, true, building_underwater);
                 if (block != (Block*)nullptr){
                     r = current_block_color.r;
                     g = current_block_color.g;
@@ -357,7 +375,7 @@ void no_shenanigans ControlsChecker(){
 
             }
             else if (GameController->M3 > (uint8_t)0){
-                Block* block = GameController->GetBlockAtCrosshair(40.0, false);
+                Block* block = GameController->GetBlockAtCrosshair(40.0, false, building_underwater);
                 if (block != (Block*)nullptr){
                     current_block_color.r = block->color.r;
                     current_block_color.g = block->color.g;
@@ -435,6 +453,17 @@ __stdcall bool no_shenanigans HandleMessage(wchar_t msg[], unsigned int msg_size
     else if ( !wcscmp(msg, L"/build dry")){
         current_block_color.type = 1; //solid
         PrintSelectBlockMessage(current_block_color.r, current_block_color.g, current_block_color.b, current_block_color.type);
+        return true;
+    }
+    else if ( !wcscmp(msg, L"/build underwater")){
+        building_underwater = !building_underwater;
+        std::wstringstream ss;
+        ss << L"Underwater building toggled:";
+        ss << building_underwater ? L"ON" : L"OFF";
+        ss << "\n";
+
+
+        GameController->PrintMessage((wchar_t*)ss.str().c_str());
         return true;
     }
     else if ( !wcscmp(msg, L"/build help") ){

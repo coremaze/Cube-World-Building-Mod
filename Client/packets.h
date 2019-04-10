@@ -2,6 +2,8 @@
 #ifndef PACKETS_H
 #define PACKETS_H
 #include <vector>
+//#include <Windows.h>
+//#include <winsock2.h>
 
 class QueuePacket{
 public:
