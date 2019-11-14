@@ -21,6 +21,7 @@
 #include "../common/FloatVector2.h"
 #include "../common/Matrix4.h"
 #include "Block.h"
+#include "TextFX.h"
 
 #include <string>
 #include <map>
@@ -135,14 +136,16 @@ namespace cube {
 			int seed;
 			std::string world_name;
 			__int16 gap2070;
-			_BYTE gap2092[466];
+			_BYTE gap2092[30];
+			std::list<cube::TextFX> textfx_list;
+			_BYTE gap20C0[420];
 			int current_character_slot;
 			cube::Database characters_db;
 			cube::Database database_1;
 
 
             cube::Creature* GetPlayer();
-			bool cube::Game::TraceCrosshairToBlock(float reach_in_blocks_from_camera, bool want_face_block, LongVector3* result);
+			bool cube::Game::TraceCrosshairToBlock(float reach_in_blocks_from_camera, bool want_face_block, LongVector3* result, bool pass_through_water=false);
             void PrintMessage(const wchar_t* message, FloatRGBA* color);
             void PrintMessage(const wchar_t* message);
             void PrintMessage(const wchar_t* message, char red, char green, char blue);

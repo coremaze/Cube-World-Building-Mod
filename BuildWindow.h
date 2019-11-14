@@ -14,6 +14,8 @@ class BuildWindow {
 	bool waterBlock = false;
 	bool wetBlock = false;
 	bool lavaBlock = false;
+	bool poisonBlock = false;
+	bool underwater = false;
 
 	bool wantMouse = false;
 	bool wantKeyboard = false;
@@ -31,6 +33,8 @@ public:
 	void OnGetMouseState(DIMOUSESTATE* diMouse);
 	void OnGetKeyboardState(BYTE* diKeys);
 	void UpdateBlockState(cube::Block block);
+	void DeselectSpecialTypesExcept(bool& option);
+	bool IsSpecialTypeSelected();
 
 };
 

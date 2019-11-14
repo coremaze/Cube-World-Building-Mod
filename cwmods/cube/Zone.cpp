@@ -13,7 +13,10 @@ IntVector2 cube::Zone::ZoneCoordsFromBlocks(int64_t x, int64_t y) {
 	int zone_y = pydiv(y, cube::BLOCKS_PER_ZONE);
 	return IntVector2(zone_x, zone_y);
 }
-void cube::Zone::SetBlock(IntVector3 zone_position, cube::Block block) {
+void cube::Zone::SetBlock(IntVector3 zone_position, cube::Block block, bool update) {
+	// NOTE: Setting chunk.needs_remesh too often can cause a heap corruption during the rendering process.
+	// I haven't figured out a solution to this yet.
+
 	int fieldIndex = zone_position.x * cube::BLOCKS_PER_ZONE + zone_position.y;
 	cube::Field* field = &this->fields[fieldIndex];
 
@@ -21,7 +24,7 @@ void cube::Zone::SetBlock(IntVector3 zone_position, cube::Block block) {
 	int end_z = field->base_z + field->blocks.size();
 
 	if (zone_position.z >= end_z) { //Too high
-		int block_index = zone_position.z - field->base_z;
+		block_index = zone_position.z - field->base_z;
 
 		int old_count = field->blocks.size();
 		field->blocks.resize(block_index + 1);
@@ -70,7 +73,9 @@ void cube::Zone::SetBlock(IntVector3 zone_position, cube::Block block) {
 		field->blocks[block_index] = block;
 	}
 
-	this->chunk.needs_remesh = true;
+	if (update) {
+		this->chunk.needs_remesh = true;
+	}
 }
 
 cube::Block* cube::Zone::GetBlock(IntVector3 zone_position) {
@@ -94,33 +99,66 @@ cube::Block cube::Zone::GetBlockInterpolated(IntVector3 zone_position) {
 	cube::Field* field = &this->fields[fieldIndex];
 
 	if (zone_position.z < field->base_z) {
-		// This does seem to reflect what the actual game uses for its equivalent function,
-		// But what actually ends up being rendered can be different. (See cubeworld.exe+0xEA0D2)
-		// cube::Field has some floats that affect what color sub-base-z blocks are rendered as.
-		// I'm guessing it's biome related information.
 		cube::Block block;
-		block.red = 0xC8;
-		block.green = 0xC8;
-		block.blue = 0;
-		block.field_3 = 0;
-		block.type = 1;
-		block.breakable = 0;
+
+		// This is how blocks below the base-z are interpolated for the renderer. It's black magic to me!
+		int block_x_coord = this->position.x * cube::BLOCKS_PER_ZONE + zone_position.x;
+		int block_y_coord = this->position.y * cube::BLOCKS_PER_ZONE + zone_position.y;
+
+		float interpolation_x_minus_1 = ((float(*)(cube::World*, int, int))CWOffset(0x35EA0))(this->world, block_x_coord - 1, block_y_coord);
+		float interpolation_x_plus_1 = ((float(*)(cube::World*, int, int))CWOffset(0x35EA0))(this->world, block_x_coord + 1, block_y_coord);
+		float interpolation_y_minus_1 = ((float(*)(cube::World*, int, int))CWOffset(0x35EA0))(this->world, block_x_coord, block_y_coord - 1);
+		float interpolation_y_plus_1 = ((float(*)(cube::World*, int, int))CWOffset(0x35EA0))(this->world, block_x_coord, block_y_coord + 1);
+		cube::BlockProperties<float> block_properties;
+		((cube::BlockProperties<float> * (*)(cube::World*, cube::BlockProperties<float>*, signed int, signed int, signed int, float, float, float, float, float, float, float, float, float, float, float, float, float, float, float, float))
+			CWOffset(0x2D8E00))
+			(this->world,
+			 &block_properties,
+			 block_x_coord,
+			 block_y_coord,
+			 zone_position.z,
+			 field->field_8,
+			 interpolation_x_minus_1,
+			 interpolation_x_plus_1,
+			 interpolation_y_minus_1,
+			 interpolation_y_plus_1,
+			 field->field_14,
+			 field->field_C,
+			 field->field_10,
+			 field->field_28,
+			 0.0,
+			 field->field_38,
+			 field->field_18,
+			 field->field_1C,
+			 field->field_20,
+			 field->field_30,
+			 field->field_34);
+		((void(*)(cube::Block*, cube::BlockProperties<float>*))CWOffset(0xBA820))(&block, &block_properties);
+
+		block.Half(block_properties);
+
 		return block;
 	}
 
 	int block_index = zone_position.z - field->base_z;
 
 	if (block_index >= field->blocks.size()) {
-		// Air
+		// Air or water
 		cube::Block block;
 		block.red = 255;
 		block.green = 255;
 		block.blue = 255;
 		block.field_3 = 0;
-		block.type = 0;
+		block.type = (zone_position.z > 0) ? cube::Block::Type::Air : cube::Block::Type::Water;
 		block.breakable = 0;
 		return block;
 	}
 
-	return field->blocks[block_index];
+	// turn sub-0 air blocks into water
+	cube::Block block = field->blocks[block_index];
+	if ( (zone_position.z <= 0) && (block.type == cube::Block::Type::Air) ) {
+		block.type = cube::Block::Type::Water;
+	}
+
+	return block;
 }

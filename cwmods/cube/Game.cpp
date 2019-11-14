@@ -8,11 +8,11 @@ float radians_to_degrees(float radians) {
 	return (radians * 180.0) / 3.1415926535;
 }
 
-cube::Creature* cube::Game::GetPlayer(){
-    return this->world->local_creature;
+cube::Creature* cube::Game::GetPlayer() {
+	return this->world->local_creature;
 }
 
-bool cube::Game::TraceCrosshairToBlock(float reach_in_blocks_from_camera, bool want_face_block, LongVector3* result) {
+bool cube::Game::TraceCrosshairToBlock(float reach_in_blocks_from_camera, bool want_face_block, LongVector3* result, bool pass_through_water) {
 	//Calculate the direction the camera is in
 	f32 cameraYaw = this->camera_angle.z;
 	f32 cameraPitch = this->camera_angle.x;
@@ -53,7 +53,10 @@ bool cube::Game::TraceCrosshairToBlock(float reach_in_blocks_from_camera, bool w
 		blockz = pydiv(camera_z, DOTS_PER_BLOCK);
 		//Figure out what's in the new location
 		cube::Block block = this->world->GetBlockInterpolated(blockx, blocky, blockz);
-		if (block.type != 0) { //If the block is not an air block
+		bool isAir = block.type == cube::Block::Type::Air;
+		bool isWater = block.type == cube::Block::Water;
+		bool canPassThrough = isAir || (isWater && pass_through_water);
+		if (!canPassThrough) { //If the block is a block we cannot pass through (we hit something)
 			withinReach = true;
 			if (want_face_block) {
 				//If you want the face block, change the block coords to whatever was seen last time. ie, go back one.
@@ -62,6 +65,7 @@ bool cube::Game::TraceCrosshairToBlock(float reach_in_blocks_from_camera, bool w
 				blockz = lastblockz;
 			}
 			break; //Leave loop if successfully hit a block
+
 		}
 		//Move the position back a tiny bit
 		camera_x -= (i64)(camera_x_direction * raycast_precision);
@@ -82,11 +86,11 @@ bool cube::Game::TraceCrosshairToBlock(float reach_in_blocks_from_camera, bool w
 }
 
 void cube::Game::PrintMessage(const wchar_t* message, FloatRGBA* color) {
-    this->gui.chat_widget->PrintMessage(message, color);
+	this->gui.chat_widget->PrintMessage(message, color);
 }
 void cube::Game::PrintMessage(const wchar_t* message) {
-    this->gui.chat_widget->PrintMessage(message);
+	this->gui.chat_widget->PrintMessage(message);
 }
 void cube::Game::PrintMessage(const wchar_t* message, char red, char green, char blue) {
-    this->gui.chat_widget->PrintMessage(message, red, green, blue);
+	this->gui.chat_widget->PrintMessage(message, red, green, blue);
 }

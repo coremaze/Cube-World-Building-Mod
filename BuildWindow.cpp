@@ -20,6 +20,7 @@ void BuildWindow::Present() {
 	ImGui::GetStyle().Colors[ImGuiCol_WindowBg] = ImVec4(0.10f, 0.10f, 0.10f, 1.00f);
 	ImGui::GetStyle().Colors[ImGuiCol_TitleBgActive] = ImVec4(0.50f, 0.30f, 0.30f, 1.00f);
 	ImGuiIO& io = ImGui::GetIO();
+	io.IniFilename = nullptr;
 	wantMouse = io.WantCaptureMouse;
 	wantKeyboard = io.WantCaptureKeyboard;
 	io.MouseDrawCursor = wantMouse;
@@ -28,11 +29,13 @@ void BuildWindow::Present() {
 	ImGui_ImplDX11_NewFrame();
 	ImGui_ImplWin32_NewFrame();
 	ImGui::NewFrame();
-	ImVec2 size(360, 170);
+	ImVec2 size(360, 220);
 	ImGui::SetNextWindowSize(size);
 	ImGui::Begin("Building Mod", nullptr, size, -1.0, ImGuiWindowFlags_NoResize);
 
 	ImGui::Checkbox("Build mode", &buildModeEnabled);
+
+	ImGui::Checkbox("Ignore water", &underwater);
 
 	ImGui::Separator();
 
@@ -41,26 +44,29 @@ void BuildWindow::Present() {
 	ImGui::Checkbox("Water", &waterBlock);
 	if (waterBlock) {
 		currentBlock.type = cube::Block::Type::Water;
-		wetBlock = false;
-		lavaBlock = false;
+		DeselectSpecialTypesExcept(waterBlock);
 	}
 
 	ImGui::Checkbox("Wet", &wetBlock);
 	if (wetBlock) {
-		currentBlock.type = cube::Block::Type::Water | cube::Block::Type::Colored;
-		waterBlock = false;
-		lavaBlock = false;
-	} 
-	
-	ImGui::Checkbox("Lava", &lavaBlock);
-	if (lavaBlock) {
-		currentBlock.type = cube::Block::Type::Lava | cube::Block::Type::Colored;
-		waterBlock = false;
-		wetBlock = false;
+		currentBlock.type = cube::Block::Type::Wet;
+		DeselectSpecialTypesExcept(wetBlock);
 	}
 
-	if (!waterBlock && !wetBlock) {
-		currentBlock.type &= ~cube::Block::Type::Water;
+	ImGui::Checkbox("Lava", &lavaBlock);
+	if (lavaBlock) {
+		currentBlock.type = cube::Block::Type::Lava;
+		DeselectSpecialTypesExcept(lavaBlock);
+	}
+
+	ImGui::Checkbox("Poison", &poisonBlock);
+	if (poisonBlock) {
+		currentBlock.type = cube::Block::Type::Poison;
+		DeselectSpecialTypesExcept(poisonBlock);
+	}
+
+	if (!IsSpecialTypeSelected()) {
+		currentBlock.type = cube::Block::Type::Solid;
 	}
 
 	if (!waterBlock) {
@@ -75,9 +81,6 @@ void BuildWindow::Present() {
 			currentBlock.green = blockColor.y * 255.0;
 			currentBlock.blue = blockColor.z * 255.0;
 		}
-
-		currentBlock.type |= cube::Block::Type::Colored;
-		
 	}
 
 	mod->SelectBlock(currentBlock, false);
@@ -103,6 +106,9 @@ void BuildWindow::Initialize() {
 void BuildWindow::Update() {
 	if (buildModeEnabled != mod->InBuildMode()) {
 		mod->ToggleBuildMode();
+	}
+	if (underwater != mod->CanBuildUnderwater()) {
+		mod->ToggleUnderwaterBuilding();
 	}
 	UpdateBlockState(mod->GetCurrentBlock());
 }
@@ -140,7 +146,18 @@ void BuildWindow::OnGetKeyboardState(BYTE* diKeys) {
 }
 
 void BuildWindow::UpdateBlockState(cube::Block block) {
-	wetBlock = (block.type & cube::Block::Type::Water) && (block.type & cube::Block::Type::Colored);
-	waterBlock = (block.type & cube::Block::Type::Water) && !wetBlock;
-	lavaBlock =(block.type & cube::Block::Type::Lava) && (block.type & cube::Block::Type::Colored);
+	wetBlock = block.type == cube::Block::Type::Wet;
+	waterBlock = block.type == cube::Block::Type::Water;
+	lavaBlock = block.type == cube::Block::Type::Lava;
+}
+
+void BuildWindow::DeselectSpecialTypesExcept(bool& option) {
+	waterBlock = false;
+	wetBlock = false;
+	lavaBlock = false;
+
+	option = true;
+}
+bool BuildWindow::IsSpecialTypeSelected() {
+	return waterBlock || wetBlock || lavaBlock || poisonBlock;
 }

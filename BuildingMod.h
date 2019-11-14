@@ -14,6 +14,7 @@ private:
 	cube::Game* game;
 	f32 reachRange = 40.0;
 	cube::Block currentBlock;
+	bool buildUnderwater = false;
 	BuildWindow* buildWindow;
 
 public:
@@ -22,6 +23,8 @@ public:
 	cube::Block GetCurrentBlock();
 	void SelectBlock(cube::Block block, bool verbose = true);
 	void SetBlockColor(cube::Block block, bool verbose = true);
+	bool CanBuildUnderwater();
+	void ToggleUnderwaterBuilding();
 
 private:
 	void PrintMessagePrefix();
@@ -32,6 +35,7 @@ private:
 	bool ReadyToPick();
 	void PickAction();
 	bool InOtherGUI();
+	void PrintBlockInfo();
 
 	// Event handlers
 	virtual void Initialize() override;
@@ -40,6 +44,7 @@ private:
 	virtual void OnGetMouseState(DIMOUSESTATE* diMouse) override;
 	virtual void OnPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT Flags) override;
 	virtual int OnWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) override;
+	virtual int OnChat(std::wstring* msg) override;
 };
 
 #endif

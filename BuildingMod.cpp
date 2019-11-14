@@ -55,6 +55,14 @@ void BuildingMod::SetBlockColor(cube::Block block, bool verbose) {
 	SelectBlock(newBlock, verbose);
 }
 
+bool BuildingMod::CanBuildUnderwater() {
+	return buildUnderwater;
+}
+
+void BuildingMod::ToggleUnderwaterBuilding() {
+	buildUnderwater = !buildUnderwater;
+}
+
 bool BuildingMod::ReadyToBreak() {
 	SYSTEMTIME currentTime;
 	GetSystemTime(&currentTime);
@@ -69,15 +77,18 @@ void BuildingMod::BreakAction() {
 
 	EnterCriticalSection(&game->world->zones_critical_section);
 	LongVector3 hitLocation;
-	if (game->TraceCrosshairToBlock(reachRange, false, &hitLocation)) {
+	if (game->TraceCrosshairToBlock(reachRange, false, &hitLocation, buildUnderwater)) {
 		cube::Block airBlock;
 		airBlock.red = 255;
 		airBlock.green = 255;
 		airBlock.blue = 255;
-		airBlock.type = 0;
+		airBlock.type = cube::Block::Type::Air;
 		airBlock.breakable = 0;
 		game->world->SetBlock(hitLocation, airBlock);
+
+		EnterCriticalSection(&game->host.world.zones_critical_section);
 		game->host.world.SetBlock(hitLocation, airBlock);
+		LeaveCriticalSection(&game->host.world.zones_critical_section);
 	}
 	LeaveCriticalSection(&game->world->zones_critical_section);
 }
@@ -96,7 +107,7 @@ void BuildingMod::PlaceAction() {
 
 	EnterCriticalSection(&game->world->zones_critical_section);
 	LongVector3 hitLocation;
-	if (game->TraceCrosshairToBlock(reachRange, true, &hitLocation)) {
+	if (game->TraceCrosshairToBlock(reachRange, true, &hitLocation, buildUnderwater)) {
 
 		// Teleport the player upwards if they're standing in the block they're trying to place.
 		// This allows players to pillar up.
@@ -106,7 +117,8 @@ void BuildingMod::PlaceAction() {
 			pydiv(playerDotLocation->z, cube::DOTS_PER_BLOCK));
 		if (playerBlockLocation.x == hitLocation.x &&
 			playerBlockLocation.y == hitLocation.y &&
-			playerBlockLocation.z == hitLocation.z + 1) {
+			playerBlockLocation.z == hitLocation.z + 1) 
+		{
 			playerDotLocation->z += 1 * cube::DOTS_PER_BLOCK;
 		}
 
@@ -132,7 +144,7 @@ void BuildingMod::PickAction() {
 	LongVector3 hitLocation;
 	if (game->TraceCrosshairToBlock(reachRange, false, &hitLocation)) {
 		cube::Block hitBlock = game->world->GetBlockInterpolated(hitLocation);
-		if (hitBlock.type != 0) {
+		if (hitBlock.type != cube::Block::Air) {
 			SelectBlock(hitBlock);
 		}
 
@@ -178,6 +190,14 @@ bool BuildingMod::InOtherGUI() {
 	return false;
 }
 
+void BuildingMod::PrintBlockInfo() {
+	PrintMessagePrefix();
+	wchar_t msg[256];
+	swprintf(msg, L"R: %02X; G: %02X; B: %02X, Unk: %02X, type: %02X, breakable: %02X\n", 
+		currentBlock.red, currentBlock.green, currentBlock.blue, currentBlock.field_3, currentBlock.type, currentBlock.breakable);
+	game->PrintMessage(msg);
+}
+
 cube::Block BuildingMod::GetCurrentBlock() {
 	return currentBlock;
 }
@@ -191,7 +211,7 @@ void BuildingMod::Initialize() {
 	currentBlock.red = 255;
 	currentBlock.green = 255;
 	currentBlock.blue = 255;
-	currentBlock.type = 1;
+	currentBlock.type = cube::Block::Type::Solid;
 	buildWindow = new BuildWindow(this);
 }
 
@@ -234,4 +254,12 @@ void BuildingMod::OnPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT F
 
 int BuildingMod::OnWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	return buildWindow->WindowProc(hwnd, uMsg, wParam, lParam);
+}
+
+int BuildingMod::OnChat(std::wstring* msg) {
+	if (!wcscmp(msg->c_str(), L"/build info")) {
+		PrintBlockInfo();
+		return 1;
+	}
+	return 0;
 }

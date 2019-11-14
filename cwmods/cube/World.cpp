@@ -18,12 +18,38 @@ cube::Zone* cube::World::GetZone(int x, int y) {
 	IntVector2 position(x, y);
 	return this->GetZone(position);
 }
-void cube::World::SetBlock(LongVector3 block_pos, Block block) {
+void cube::World::SetBlock(LongVector3 block_pos, Block block, bool update) {
 	IntVector2 zonePos = cube::Zone::ZoneCoordsFromBlocks(block_pos.x, block_pos.y);
 	cube::Zone* zone = this->GetZone(zonePos);
 	if (!zone) return;
 	IntVector3 zoneBlockPos(pymod(block_pos.x, cube::BLOCKS_PER_ZONE), pymod(block_pos.y, cube::BLOCKS_PER_ZONE), block_pos.z);
-	zone->SetBlock(zoneBlockPos, block);
+	zone->SetBlock(zoneBlockPos, block, update);
+
+	LongVector3 blockInZonePos = LongVector3(pymod(block_pos.x, cube::BLOCKS_PER_ZONE), pymod(block_pos.y, cube::BLOCKS_PER_ZONE), block_pos.z);
+
+	if (update) {
+		//Update adjacent chunks if needed
+		if (blockInZonePos.x == 0) {
+			zone = this->GetZone(IntVector2(zonePos.x - 1, zonePos.y));
+			if (zone) zone->chunk.needs_remesh = true;
+		} else if (blockInZonePos.x == cube::BLOCKS_PER_ZONE - 1) {
+			zone = this->GetZone(IntVector2(zonePos.x + 1, zonePos.y));
+			if (zone) zone->chunk.needs_remesh = true;
+		}
+
+
+		if (blockInZonePos.y == 0) {
+			zone = this->GetZone(IntVector2(zonePos.x, zonePos.y - 1));
+			if (zone) zone->chunk.needs_remesh = true;
+		}
+		else if (blockInZonePos.y == cube::BLOCKS_PER_ZONE - 1) {
+			zone = this->GetZone(IntVector2(zonePos.x, zonePos.y + 1));
+			if (zone) zone->chunk.needs_remesh = true;
+		}
+	}
+
+
+	
 }
 cube::Block* cube::World::GetBlock(LongVector3 block_pos) {
 	IntVector2 zonePos = cube::Zone::ZoneCoordsFromBlocks(block_pos.x, block_pos.y);
@@ -44,7 +70,7 @@ cube::Block cube::World::GetBlockInterpolated(LongVector3 block_pos) {
 		block.green = 255;
 		block.blue = 255;
 		block.field_3 = 0;
-		block.type = 0;
+		block.type = cube::Block::Air;
 		block.breakable = 0;
 		return block;
 	}

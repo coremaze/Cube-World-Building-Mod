@@ -37,10 +37,11 @@ namespace cube {
 			};
 
 			class UnkVectors {
-				cube::World* world;
-				std::vector<void*> unk_vec_0;
-				std::vector<void*> unk_vec_1;
-				std::vector<void*> unk_vec_2;
+				public:
+					cube::World* world;
+					std::vector<void*> unk_vec_0;
+					std::vector<void*> unk_vec_1;
+					std::vector<void*> unk_vec_2;
 			};
 
 			virtual ~World();
@@ -98,7 +99,7 @@ namespace cube {
 			// Methods
 			cube::Zone* GetZone(IntVector2 position);
 			cube::Zone* GetZone(int x, int y);
-			void SetBlock(LongVector3 block_pos, Block block);
+			void SetBlock(LongVector3 block_pos, Block block, bool update=true);
 			cube::Block* GetBlock(LongVector3 block_pos);
 			cube::Block* GetBlock(uint64_t block_x, uint64_t block_y, uint64_t block_z);
 			cube::Block GetBlockInterpolated(uint64_t block_x, uint64_t block_y, uint64_t block_z);
