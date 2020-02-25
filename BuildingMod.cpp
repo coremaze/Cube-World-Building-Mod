@@ -266,7 +266,6 @@ void BuildingMod::OnGameTick(cube::Game* game) {
 	
 	this->game = game;
 	buildNetwork->Process();
-	Sleep(0);
 	ReloadZonesIfNeeded();
 }
 
