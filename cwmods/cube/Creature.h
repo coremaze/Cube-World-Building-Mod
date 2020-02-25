@@ -4,12 +4,13 @@
 #include "../IDA/types.h"
 #include "../common/LongVector3.h"
 #include "../common/FloatVector3.h"
-#include "../common/ByteRGBA.h"
+#include "../common/RGBA.h"
 #include "../common/Matrix4.h"
 #include <vector>
 #include <list>
 #include "ItemStack.h"
 #include "Equipment.h"
+#include "Interaction.h"
 #include <windows.h>
 
 namespace cube {
@@ -250,7 +251,9 @@ namespace cube {
 			int field_A08;
 			cube::Item unk_item;
 			int gold;
-			_BYTE gapAB0[168];
+			_BYTE gapAB0[8];
+			std::list<cube::Interaction> interactions;
+			_BYTE gapAC8[144];
 			int field_B58;
 			int climbing_speed;
 			int swimming_speed;
@@ -268,6 +271,15 @@ namespace cube {
 
             static cube::Creature* Create(__int64 id);
             cube::Creature* ctor(__int64* id);
+			float GetArmor();
+			float GetCritical(cube::Creature* other_creature = nullptr, bool other_creature_based_on_resistance = true);
+			float GetAttackPower(bool unk_bool = true);
+			float GetSpellPower(bool unk_bool = true);
+			float GetHaste();
+			float GetMaxHP();
+			float GetResistance();
+			float GetRegeneration();
+			float GetManaGeneration();
     };
 }
 

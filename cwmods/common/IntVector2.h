@@ -8,6 +8,7 @@ class IntVector2 {
     public:
         int x;
         int y;
+		IntVector2();
         IntVector2(int x, int y);
 
 		bool operator==(const IntVector2& other) const {

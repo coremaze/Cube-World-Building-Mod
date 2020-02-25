@@ -8,7 +8,9 @@ BuildWindow::BuildWindow(BuildingMod* mod) {
 
 void BuildWindow::Present() {
 	if (!initialized) {
-		Initialize();
+		if (!Initialize()) {
+			return;
+		}
 	}
 
 	if (!game->gui.esc_menu_displayed) {
@@ -23,14 +25,15 @@ void BuildWindow::Present() {
 	io.IniFilename = nullptr;
 	wantMouse = io.WantCaptureMouse;
 	wantKeyboard = io.WantCaptureKeyboard;
-	io.MouseDrawCursor = wantMouse;
 	io.Fonts->AddFontFromFileTTF("resource1.dat", 16.0f);
 
 	ImGui_ImplDX11_NewFrame();
+	io.DisplaySize = ImVec2((float)cube::GetGame()->width, (float)cube::GetGame()->height);
 	ImGui_ImplWin32_NewFrame();
 	ImGui::NewFrame();
 	ImVec2 size(360, 220);
 	ImGui::SetNextWindowSize(size);
+	ImGui::SetNextWindowPos(ImVec2(100, 100), ImGuiCond_Once);
 	ImGui::Begin("Building Mod", nullptr, size, -1.0, ImGuiWindowFlags_NoResize);
 
 	ImGui::Checkbox("Build mode", &buildModeEnabled);
@@ -90,17 +93,33 @@ void BuildWindow::Present() {
 	ImGui::Render();
 	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 
+	// We just drew over the original cursor, so draw the cursor again on top of the gui
+	float guiScale = game->options.guiScale;
+	FloatVector2 cursorPosition = game->plasma_engine->mouse_position;
+	plasma::Matrix<float>* trans = &game->gui.cursor_node->transformation->matrix;
+	plasma::Matrix<float> oldTrans = *trans;
+	*trans = trans->scale(guiScale).translate(cursorPosition.x - (cursorPosition.x / guiScale), cursorPosition.y - (cursorPosition.y / guiScale), 0);
+
+	game->gui.cursor_node->Draw(0);
+
+	*trans = oldTrans;
+
 	Update();
 }
 
-void BuildWindow::Initialize() {
+bool BuildWindow::Initialize() {
+	// If the user does not have the window active when it starts,
+	// then getting the hwnd will fail
+	HWND hWnd = GetActiveWindow();
+	if (!hWnd) return false;
 	game = cube::GetGame();
 	initialized = true;
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 	ImGui::StyleColorsDark();
-	ImGui_ImplWin32_Init(GetActiveWindow());
+	ImGui_ImplWin32_Init(hWnd);
 	ImGui_ImplDX11_Init(cube::GetID3D11Device(), cube::GetID3D11DeviceContext());
+	return true;
 }
 
 void BuildWindow::Update() {
@@ -155,6 +174,7 @@ void BuildWindow::DeselectSpecialTypesExcept(bool& option) {
 	waterBlock = false;
 	wetBlock = false;
 	lavaBlock = false;
+	poisonBlock = false;
 
 	option = true;
 }

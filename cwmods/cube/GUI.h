@@ -1,6 +1,9 @@
 #ifndef CUBE_GUI_H
 #define CUBE_GUI_H
 
+#include <map>
+#include <vector>
+
 #include "../IDA/types.h"
 #include "../plasma/Node.h"
 #include "ChatWidget.h"
@@ -20,6 +23,8 @@
 #include "ControlsWidget.h"
 #include "SpeechWidget.h"
 #include "OptionsWidget.h"
+#include "CharacterPreviewWidget.h"
+#include "CharacterStyleWidget.h"
 
 namespace cube {
     class Game;
@@ -29,29 +34,32 @@ namespace cube {
 			plasma::Node* startmenu_buttons_node;
 			void* start_menu_widget;
 			plasma::Node* character_selection_node;
-			_BYTE gap20[24];
+			std::vector<cube::CharacterPreviewWidget*> character_preview_widgets;
 			plasma::Node* button2_node;
 			plasma::Node* smallbutton_node;
 			plasma::Node* button_node;
-			_BYTE gap50[8];
+			__int64 field_50;
 			plasma::Node* character_creation_node;
-			void* character_style_widget;
+			cube::CharacterStyleWidget* character_style_widget;
 			plasma::Node* blackwidget_node;
 			plasma::Node* button_node_1;
 			plasma::Node* charactername_node;
-			plasma::Node* plasma_node_10;
-			_BYTE gap88[56];
+			plasma::Node* world_selection_node;
+			std::vector<plasma::Node*> world_selection_preview_cards;
+			std::map<void*, void*> some_map_related_to_worlds_0;
+			std::map<void*, void*> some_map_related_to_worlds_1;
 			plasma::Node* button_node_2;
 			plasma::Node* button2_node_1;
 			plasma::Node* smallbutton_node_1;
 			plasma::Node* button_node_3;
 			_BYTE gapE0[8];
-			plasma::Node* plasma_node_15;
+			plasma::Node* world_creation_node;
 			plasma::Node* button_node_4;
 			plasma::Node* worldseed_node;
 			plasma::Node* worldname_node;
 			plasma::Node* interface_elements_node;
-			_BYTE gap110[48];
+			std::vector<void*> field_110;
+			std::vector<plasma::Node*> some_plasma_node_vector;
 			plasma::Node* playername_node;
 			plasma::Node* plasma_node_21;
 			plasma::Node* hpbar_node;
@@ -103,14 +111,14 @@ namespace cube {
 			cube::SpriteWidget* sprite_widget_1;
 			cube::SpriteWidget* sprite_widget_2;
 			cube::SpriteWidget* sprite_widget_3;
-			_BYTE gap2E8[24];
+			std::vector<cube::SpeechWidget*> speech_widgets;
 			cube::SpeechWidget* speech_widget;
 			char esc_menu_displayed;
 			plasma::Node* blackwidget_node_0;
 			plasma::Node* speech_node;
 			plasma::Node* tab_node;
 			plasma::Node* plasma_node_54;
-			plasma::Node* plasma_node_55;
+			plasma::Node* cursor_node;
 			plasma::Node* wait_node;
 			plasma::Node* button_node_5;
 			plasma::Node* enemy_node;
@@ -190,7 +198,6 @@ namespace cube {
 			_BYTE gap5A8[24];
 			cube::Game* game;
 			char pad_05C8[8];
-
 
 			void UpdateResolution(signed int width, signed int height);
         };

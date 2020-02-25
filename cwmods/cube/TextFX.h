@@ -3,7 +3,7 @@
 
 #include "../common//LongVector3.h"
 #include "../common/FloatVector2.h"
-#include "../common/FloatRGBA.h"
+#include "../common/RGBA.h"
 
 #include <string>
 

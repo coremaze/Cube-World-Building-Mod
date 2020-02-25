@@ -7,10 +7,10 @@ if(CMAKE_BUILD_TYPE MATCHES "Debug")
 endif()
 project("CWSDK" VERSION "1.0.0")
 add_library (CWSDK 
-    cwmods.cpp
-    common/ByteRGBA.cpp
+    cwsdk.cpp
+    common/BytesIO.cpp
+    common/ColorRGB.cpp
     common/DoubleVector3.cpp
-    common/FloatRGBA.cpp
     common/FloatVector2.cpp
     common/FloatVector3.cpp
     common/IntVector2.cpp
@@ -18,14 +18,18 @@ add_library (CWSDK
     common/LongVector3.cpp
     common/math.cpp
     common/Matrix4.cpp
+    common/RGBA.cpp
     cube/AdaptionWidget.cpp
     cube/AI.cpp
     cube/BaseWidget.cpp
     cube/Block.cpp
     cube/BlockProperties.cpp
+    cube/CharacterPreviewWidget.cpp
+    cube/CharacterStyleWidget.cpp
     cube/CharacterWidget.cpp
     cube/ChatWidget.cpp
     cube/Client.cpp
+    cube/Connection.cpp
     cube/Controls.cpp
     cube/ControlsWidget.cpp
     cube/Creature.cpp
@@ -39,6 +43,7 @@ add_library (CWSDK
     cube/GUI.cpp
     cube/HelpWidget.cpp
     cube/Host.cpp
+    cube/Interaction.cpp
     cube/InventoryWidget.cpp
     cube/Item.cpp
     cube/ItemStack.cpp
@@ -50,6 +55,7 @@ add_library (CWSDK
     cube/PreviewWidget.cpp
     cube/Projectile.cpp
     cube/QuestionWidget.cpp
+    cube/ResolutionInfo.cpp
     cube/ServerUpdates.cpp
     cube/Speech.cpp
     cube/SpeechText.cpp
@@ -67,11 +73,14 @@ add_library (CWSDK
     cube/XAudio2Engine.cpp
     cube/Zone.cpp
     gfx/Chunk.cpp
+    gfx/ChunkBuffer.cpp
     gfx/D3D11Graphics.cpp
     gfx/D3D11IndexBuffer.cpp
     gfx/D3D11Renderer.cpp
     gfx/D3D11VertexBuffer.cpp
+    gfx/Graphics.cpp
     gfx/IndexBuffer.cpp
+    gfx/Renderer.cpp
     gfx/VertexBuffer.cpp
     msvc/_Thrd_t.cpp
     plasma/Array.cpp
@@ -91,18 +100,8 @@ add_library (CWSDK
     plasma/ScalableFont.cpp
     plasma/Transformation.cpp
     plasma/Vector.cpp
-    plasma/Widget.cpp
-    steam/CSteamID.cpp
-    steam/EBeginAuthResult.cpp
-    steam/EP2PSend.cpp
-    steam/ESNetSocketConnectionType.cpp
-    steam/EUserHasLicenseForAppResult.cpp
-    steam/EVoiceResult.cpp
-    steam/ISteamNetworking.cpp
-    steam/ISteamUser.cpp
-    steam/P2PSessionState_t.cpp
-    steam/SNetListenSocket_t.cpp
-    steam/SNetSocket_t.cpp)
+    plasma/Widget.cpp)
+target_link_libraries(CWSDK winmm.lib)
 target_include_directories (CWSDK PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories (CWSDK PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/cwmods)
 target_include_directories (CWSDK PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/cwmods/common)

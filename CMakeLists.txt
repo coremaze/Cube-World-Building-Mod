@@ -6,7 +6,18 @@ add_library (BuildingMod SHARED
 "main.cpp" 
 "BuildingMod.cpp"
 "BuildWindow.cpp"
+"ChunkUpdate.cpp"
 "DButton.cpp"
+"BuildNetwork/BuildNetwork.cpp"
+"BuildNetwork/BuildNetworkPacket.cpp"
+"BuildNetwork/SingleBlockUpdatePacket.cpp"
+"BuildNetwork/ZoneUpdatePacket.cpp"
+"BuildNetwork/ZoneLoadPacket.cpp"
+"BuildNetwork/PingPacket.cpp"
+"ZoneSaver/ZoneBlock.cpp"
+"ZoneSaver/ZoneContainer.cpp"
+"ZoneSaver/WorldContainer.cpp"
+"ZoneSaver/ZoneSaver.cpp"
 )
 target_link_libraries (BuildingMod LINK_PUBLIC CWSDK)
 target_link_libraries (BuildingMod LINK_PUBLIC IMGUI)

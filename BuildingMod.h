@@ -1,9 +1,15 @@
 #ifndef BUILDINGMOD_H
 #define BUILDINGMOD_H
-#include "cwmods/cwmods.h"
+#include "cwmods/cwsdk.h"
 #include "DButton.h"
 #include "BuildWindow.h"
+#include "ChunkUpdate.h"
+#include <mutex>
+#include <vector>
+#include <map>
+#include "ZoneSaver/ZoneSaver.h"
 
+class BuildNetwork;
 class BuildingMod : GenericMod {
 private:
 	DButton buildButton = DButton(DIK_GRAVE);
@@ -15,7 +21,13 @@ private:
 	f32 reachRange = 40.0;
 	cube::Block currentBlock;
 	bool buildUnderwater = false;
+	CSteamID oldHostSteamID;
 	BuildWindow* buildWindow;
+	BuildNetwork* buildNetwork;
+	std::list<ChunkUpdate> chunkUpdates;
+	std::mutex chunkUpdatesMtx;
+	
+	ZoneSaver::WorldContainer worldContainer;
 
 public:
 	bool InBuildMode();
@@ -25,6 +37,9 @@ public:
 	void SetBlockColor(cube::Block block, bool verbose = true);
 	bool CanBuildUnderwater();
 	void ToggleUnderwaterBuilding();
+	void QueueBlock(cube::Block& block, LongVector3& position);
+	void QueueBlocks(std::vector<std::pair<cube::Block, LongVector3>> blocks);
+	ZoneSaver::WorldContainer* GetWorldContainer();
 
 private:
 	void PrintMessagePrefix();
@@ -36,6 +51,7 @@ private:
 	void PickAction();
 	bool InOtherGUI();
 	void PrintBlockInfo();
+	void ReloadZonesIfNeeded();
 
 	// Event handlers
 	virtual void Initialize() override;
@@ -45,6 +61,9 @@ private:
 	virtual void OnPresent(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT Flags) override;
 	virtual int OnWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) override;
 	virtual int OnChat(std::wstring* msg) override;
+	virtual void OnZoneGenerated(cube::Zone* zone) override;
+	virtual void OnZoneDestroy(cube::Zone* zone) override;
+	virtual void OnChunkRemesh(cube::Zone* zone) override;
 };
 
 #endif

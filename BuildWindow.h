@@ -1,7 +1,7 @@
 #ifndef BUILDWINDOW_H
 #define BUILDWINDOW_H
 
-#include "cwmods/cwmods.h"
+#include "cwmods/cwsdk.h"
 #include "imgui-1.73/imgui.h"
 #include "imgui-1.73/examples/imgui_impl_dx11.h"
 #include "imgui-1.73/examples/imgui_impl_win32.h"
@@ -26,7 +26,7 @@ class BuildWindow {
 public:
 	BuildWindow(BuildingMod* mod);
 	void Present();
-	void Initialize();
+	bool Initialize();
 	void Update();
 	int WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 	void SetBuildMode(bool mode);
