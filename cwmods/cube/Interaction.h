@@ -3,7 +3,7 @@
 
 #include "Interaction.h"
 #include "Item.h"
-#include "../common/IntVector3.h"
+#include "../common/Vector3.h"
 #include "../common/types.h"
 
 namespace cube {

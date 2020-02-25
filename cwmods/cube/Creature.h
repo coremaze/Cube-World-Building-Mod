@@ -2,8 +2,7 @@
 #define CREATURE_H
 
 #include "../IDA/types.h"
-#include "../common/LongVector3.h"
-#include "../common/FloatVector3.h"
+#include "../common/Vector3.h"
 #include "../common/RGBA.h"
 #include "../common/Matrix4.h"
 #include <vector>

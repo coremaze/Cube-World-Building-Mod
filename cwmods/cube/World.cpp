@@ -1,8 +1,7 @@
 #include "World.h"
 #include "Zone.h"
 #include "constants.h"
-#include "../common/LongVector3.h"
-#include "../common/IntVector3.h"
+#include "../common/Vector3.h"
 #include "../cwsdk.h"
 
 cube::Zone* cube::World::GetZone(IntVector2 position) {

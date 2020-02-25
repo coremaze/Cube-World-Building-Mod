@@ -10,8 +10,8 @@
 #include <unordered_map>
 #include "SpriteManager.h"
 #include "ServerUpdates.h"
-#include "../common/IntVector2.h"
-#include "../common/LongVector3.h"
+#include "../common/Vector2.h"
+#include "../common/Vector3.h"
 #include "Block.h"
 #include "Projectile.h"
 

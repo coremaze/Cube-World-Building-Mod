@@ -10,15 +10,11 @@ add_library (CWSDK
     cwsdk.cpp
     common/BytesIO.cpp
     common/ColorRGB.cpp
-    common/DoubleVector3.cpp
-    common/FloatVector2.cpp
-    common/FloatVector3.cpp
-    common/IntVector2.cpp
-    common/IntVector3.cpp
-    common/LongVector3.cpp
     common/math.cpp
     common/Matrix4.cpp
     common/RGBA.cpp
+    common/Vector2.cpp
+    common/Vector3.cpp
     cube/AdaptionWidget.cpp
     cube/AI.cpp
     cube/BaseWidget.cpp

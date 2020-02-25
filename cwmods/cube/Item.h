@@ -2,7 +2,7 @@
 #define ITEM_H
 
 #include "Spirit.h"
-#include "../common/IntVector2.h"
+#include "../common/Vector2.h"
 
 namespace cube {
 class Item {

@@ -14,16 +14,12 @@
 
 #include "common/BytesIO.h"
 #include "common/ColorRGB.h"
-#include "common/DoubleVector3.h"
-#include "common/FloatVector2.h"
-#include "common/FloatVector3.h"
-#include "common/IntVector2.h"
-#include "common/IntVector3.h"
-#include "common/LongVector3.h"
 #include "common/math.h"
 #include "common/Matrix4.h"
 #include "common/RGBA.h"
 #include "common/types.h"
+#include "common/Vector2.h"
+#include "common/Vector3.h"
 
 #include "cube/AdaptionWidget.h"
 #include "cube/AI.h"
