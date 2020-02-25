@@ -1,6 +1,11 @@
 #include "BuildingMod.h"
 #include "BuildNetwork/BuildNetwork.h"
 
+#define BLOCK_BREAK_WAIT_TIME 150
+#define BLOCK_PICK_WAIT_TIME 250
+#define BLOCK_PLACE_WAIT_TIME 150
+
+
 void BuildingMod::PrintMessagePrefix() {
 	game->PrintMessage(L"[");
 	game->PrintMessage(L"Building Mod", 135, 206, 250);
@@ -71,7 +76,7 @@ bool BuildingMod::ReadyToBreak() {
 	u64 currentMS = (currentTime.wSecond * 1000) + currentTime.wMilliseconds;
 	u64 breakMS = (lastBreakTime.wSecond * 1000) + lastBreakTime.wMilliseconds;
 
-	return (currentMS - breakMS) > 150;
+	return (currentMS - breakMS) > BLOCK_BREAK_WAIT_TIME;
 }
 
 void BuildingMod::BreakAction() {
@@ -97,7 +102,7 @@ bool BuildingMod::ReadyToPlace() {
 	u64 currentMS = (currentTime.wSecond * 1000) + currentTime.wMilliseconds;
 	u64 placeMS = (lastPlacementTime.wSecond * 1000) + lastPlacementTime.wMilliseconds;
 
-	return (currentMS - placeMS) > 150;
+	return (currentMS - placeMS) > BLOCK_PLACE_WAIT_TIME;
 }
 
 void BuildingMod::PlaceAction() {
@@ -117,7 +122,7 @@ bool BuildingMod::ReadyToPick() {
 	u64 currentMS = (currentTime.wSecond * 1000) + currentTime.wMilliseconds;
 	u64 pickMS = (lastPickTime.wSecond * 1000) + lastPickTime.wMilliseconds;
 
-	return (currentMS - pickMS) > 250;
+	return (currentMS - pickMS) > BLOCK_PICK_WAIT_TIME;
 }
 
 void BuildingMod::PickAction() {
