@@ -228,6 +228,7 @@ void BuildingMod::ReloadZonesIfNeeded() {
 			LeaveCriticalSection(&world->zones_critical_section);
 			// Can't delete zones now because the D3D11Renderer is still using them.
 			// Wait some sane amount of time and create a stupid fucking race condition.
+			// Modding this game is such a mess.
 			std::thread(
 				[](std::vector<cube::Zone*>* zones) {
 					Sleep(4000);
