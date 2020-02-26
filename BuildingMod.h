@@ -41,6 +41,7 @@ public:
 	void PlaceSingleBlock(cube::Block& block, LongVector3& position);
 	void QueueBlocks(std::vector<std::pair<cube::Block, LongVector3>> blocks);
 	ZoneSaver::WorldContainer* GetWorldContainer();
+	void PlayGUISelectNoise();
 
 private:
 	void PrintMessagePrefix();

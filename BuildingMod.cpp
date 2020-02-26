@@ -261,6 +261,10 @@ ZoneSaver::WorldContainer* BuildingMod::GetWorldContainer() {
 	return &this->worldContainer;
 }
 
+void BuildingMod::PlayGUISelectNoise() {
+	game->PlaySoundEffect(cube::Game::sound_menu_select, 1.0, 0.8);
+}
+
 // Event handlers
 void BuildingMod::Initialize() {
 	GetSystemTime(&lastPlacementTime);

@@ -36,6 +36,9 @@ void BuildWindow::Present() {
 	ImGui::SetNextWindowPos(ImVec2(100, 100), ImGuiCond_Once);
 	ImGui::Begin("Building Mod", nullptr, size, -1.0, ImGuiWindowFlags_NoResize);
 
+	// Remember old states for later, so we can detect any chages and play a sound.
+	bool oldBoxStates[] = { buildModeEnabled, underwater, waterBlock, wetBlock, lavaBlock, poisonBlock };
+
 	ImGui::Checkbox("Build mode", &buildModeEnabled);
 
 	ImGui::Checkbox("Ignore water", &underwater);
@@ -92,7 +95,7 @@ void BuildWindow::Present() {
 	ImGui::EndFrame();
 	ImGui::Render();
 	ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
-
+	
 	// We just drew over the original cursor, so draw the cursor again on top of the gui
 	float guiScale = game->options.guiScale;
 	FloatVector2 cursorPosition = game->plasma_engine->mouse_position;
@@ -105,6 +108,12 @@ void BuildWindow::Present() {
 	*trans = oldTrans;
 
 	Update();
+
+	bool newBoxStates[] = { buildModeEnabled, underwater, waterBlock, wetBlock, lavaBlock, poisonBlock };
+	if (memcmp(oldBoxStates, newBoxStates, sizeof(oldBoxStates))) {
+		mod->PlayGUISelectNoise();
+	}
+
 }
 
 bool BuildWindow::Initialize() {
