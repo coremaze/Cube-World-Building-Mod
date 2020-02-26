@@ -200,6 +200,12 @@ void BuildingMod::QueueBlock(cube::Block& block, LongVector3& position) {
 	chunkUpdatesMtx.unlock();
 }
 
+void BuildingMod::PlaceSingleBlock(cube::Block& block, LongVector3& position) {
+	LongVector3 soundPos = position * cube::DOTS_PER_BLOCK;
+	cube::GetGame()->PlaySoundEffect(cube::Game::sound_arrow_destroy, soundPos, 0.1, ((float)rand() / RAND_MAX) + 1.0);
+	QueueBlock(block, position);
+}
+
 void BuildingMod::QueueBlocks(std::vector<std::pair<cube::Block, LongVector3>> blocks) {
 	chunkUpdatesMtx.lock();
 	for (auto& p : blocks) {

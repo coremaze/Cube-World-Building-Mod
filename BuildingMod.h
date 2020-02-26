@@ -38,6 +38,7 @@ public:
 	bool CanBuildUnderwater();
 	void ToggleUnderwaterBuilding();
 	void QueueBlock(cube::Block& block, LongVector3& position);
+	void PlaceSingleBlock(cube::Block& block, LongVector3& position);
 	void QueueBlocks(std::vector<std::pair<cube::Block, LongVector3>> blocks);
 	ZoneSaver::WorldContainer* GetWorldContainer();
 

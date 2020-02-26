@@ -141,11 +141,7 @@ void BuildNetwork::ProcessSC() {
 			case BuildNetworkPacket::SingleBlockUpdate: {
 				SingleBlockUpdatePacket* packet = (SingleBlockUpdatePacket*)basePacket;
 				if (size != sizeof(*packet)) break;
-				LongVector3 soundPos(packet->position.x * cube::DOTS_PER_BLOCK,
-					packet->position.y * cube::DOTS_PER_BLOCK,
-					packet->position.z * cube::DOTS_PER_BLOCK);
-				cube::GetGame()->PlaySoundEffect(cube::Game::sound_arrow_destroy, soundPos, 0.1, ((float)rand() / RAND_MAX) + 1.0);
-				mod->QueueBlock(packet->block, packet->position);
+				mod->PlaceSingleBlock(packet->block, packet->position);  
 				break;
 			}
 			case BuildNetworkPacket::ZoneUpdate: {
