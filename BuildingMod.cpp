@@ -202,7 +202,43 @@ void BuildingMod::QueueBlock(cube::Block& block, LongVector3& position) {
 
 void BuildingMod::PlaceSingleBlock(cube::Block& block, LongVector3& position) {
 	LongVector3 soundPos = position * cube::DOTS_PER_BLOCK;
-	cube::GetGame()->PlaySoundEffect(cube::Game::sound_arrow_destroy, soundPos, 0.1, ((float)rand() / RAND_MAX) + 1.0);
+	cube::Block::Type blockType = block.type;
+
+	if (block.type == cube::Block::Air) {
+		blockType = game->world->GetBlockInterpolated(position).type;
+	}
+
+	switch (blockType) {
+		case cube::Block::Water: {
+			cube::Game::SoundEffect choices[] = { cube::Game::sound_step_water, cube::Game::sound_step_water2, cube::Game::sound_step_water3 };
+			cube::Game::SoundEffect choice = choices[rand() % (sizeof(choices) / sizeof(*choices))];
+			cube::GetGame()->PlaySoundEffect(choice, soundPos, 0.20, ((float)rand() / RAND_MAX) + 1.0);
+			break;
+		}
+		case cube::Block::Wet: {
+			cube::Game::SoundEffect choices[] = { cube::Game::sound_step_water, cube::Game::sound_step_water2, cube::Game::sound_step_water3 };
+			cube::Game::SoundEffect choice = choices[rand() % (sizeof(choices) / sizeof(*choices))];
+			cube::GetGame()->PlaySoundEffect(choice, soundPos, 0.20, ((float)rand() / RAND_MAX) + 1.0);
+			cube::GetGame()->PlaySoundEffect(cube::Game::sound_arrow_destroy, soundPos, 0.10, ((float)rand() / RAND_MAX) + 1.0);
+		}
+		case cube::Block::Lava: {
+			cube::GetGame()->PlaySoundEffect(cube::Game::sound_step_water, soundPos, 0.20, ((float)rand() / RAND_MAX) / 3 + 0.3);
+			cube::GetGame()->PlaySoundEffect(cube::Game::sound_fireball, soundPos, 0.05, ((float)rand() / RAND_MAX) + 1.0);
+			break;
+		}
+		case cube::Block::Poison: {
+			cube::GetGame()->PlaySoundEffect(cube::Game::sound_step_water, soundPos, 0.30, ((float)rand() / RAND_MAX) / 4 + 0.2);
+			break;
+		}
+		case cube::Block::Air: {
+			break;
+		}
+		default: {
+			cube::GetGame()->PlaySoundEffect(cube::Game::sound_arrow_destroy, soundPos, 0.15, ((float)rand() / RAND_MAX) + 1.0);
+			break;
+		}
+	}
+
 	QueueBlock(block, position);
 }
 
