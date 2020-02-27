@@ -209,17 +209,15 @@ void BuildingMod::PlaceSingleBlock(cube::Block& block, LongVector3& position) {
 	}
 
 	switch (blockType) {
+		case cube::Block::Wet: {
+			cube::GetGame()->PlaySoundEffect(cube::Game::sound_arrow_destroy, soundPos, 0.10, ((float)rand() / RAND_MAX) + 1.0);
+			// This fallthrough is deliberate. The water sound effect should play on top.
+		}
 		case cube::Block::Water: {
 			cube::Game::SoundEffect choices[] = { cube::Game::sound_step_water, cube::Game::sound_step_water2, cube::Game::sound_step_water3 };
 			cube::Game::SoundEffect choice = choices[rand() % (sizeof(choices) / sizeof(*choices))];
 			cube::GetGame()->PlaySoundEffect(choice, soundPos, 0.20, ((float)rand() / RAND_MAX) + 1.0);
 			break;
-		}
-		case cube::Block::Wet: {
-			cube::Game::SoundEffect choices[] = { cube::Game::sound_step_water, cube::Game::sound_step_water2, cube::Game::sound_step_water3 };
-			cube::Game::SoundEffect choice = choices[rand() % (sizeof(choices) / sizeof(*choices))];
-			cube::GetGame()->PlaySoundEffect(choice, soundPos, 0.20, ((float)rand() / RAND_MAX) + 1.0);
-			cube::GetGame()->PlaySoundEffect(cube::Game::sound_arrow_destroy, soundPos, 0.10, ((float)rand() / RAND_MAX) + 1.0);
 		}
 		case cube::Block::Lava: {
 			cube::GetGame()->PlaySoundEffect(cube::Game::sound_step_water, soundPos, 0.20, ((float)rand() / RAND_MAX) / 3 + 0.3);
