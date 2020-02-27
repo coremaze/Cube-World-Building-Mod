@@ -60,7 +60,7 @@ void BuildNetwork::ProcessCS() {
 	u32 size;
 	while (cube::SteamNetworking()->IsP2PPacketAvailable(&size, CSChannel)) {
 		// Receive packet from client
-		auto buffer = std::unique_ptr<u8>(new u8[size]);
+		auto buffer = std::unique_ptr<u8[]>(new u8[size]);
 		u32 receivedSize;
 		CSteamID steamID;
 		cube::SteamNetworking()->ReadP2PPacket(buffer.get(), size, &receivedSize, &steamID, CSChannel);
@@ -121,7 +121,7 @@ void BuildNetwork::ProcessSC() {
 	u32 size;
 	while (cube::SteamNetworking()->IsP2PPacketAvailable(&size, SCChannel)) {
 		// Receive packet from server
-		auto buffer = std::unique_ptr<u8>(new u8[size]);
+		auto buffer = std::unique_ptr<u8[]>(new u8[size]);
 		u32 receivedSize;
 		CSteamID steamID;
 		cube::SteamNetworking()->ReadP2PPacket(buffer.get(), size, &receivedSize, &steamID, SCChannel);
