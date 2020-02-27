@@ -67,7 +67,6 @@ private:
 	virtual int OnWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) override;
 	virtual int OnChat(std::wstring* msg) override;
 	virtual void OnZoneGenerated(cube::Zone* zone) override;
-	virtual void OnZoneDestroy(cube::Zone* zone) override;
 	virtual void OnChunkRemesh(cube::Zone* zone) override;
 };
 

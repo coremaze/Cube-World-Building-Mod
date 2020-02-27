@@ -410,22 +410,6 @@ void BuildingMod::OnZoneGenerated(cube::Zone* zone) {
 
 	buildNetwork->SendZoneLoad(game->client.host_steam_id, zone->position);
 }
-void BuildingMod::OnZoneDestroy(cube::Zone* zone) {
-	/*wchar_t* kind;
-	if (zone->world == game->world) {
-		kind = L"Game";
-	}
-	else if (zone->world == &game->host.world) {
-		kind = L"Host";
-	}
-	else {
-		kind = L"Unknown";
-	}
-
-	wchar_t msg[256];
-	swprintf(msg, L"A zone was destroyed (%d, %d) (%ls)\n", zone->position.x, zone->position.y, kind);
-	game->PrintMessage(msg);*/
-}
 
 void BuildingMod::OnChunkRemesh(cube::Zone* zone) {
 	chunkUpdatesMtx.lock();
