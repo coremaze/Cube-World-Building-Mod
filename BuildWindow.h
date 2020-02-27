@@ -20,6 +20,8 @@ class BuildWindow {
 	bool wantMouse = false;
 	bool wantKeyboard = false;
 	bool initialized = false;
+	bool awaitingKeyRemap = false;
+	bool keyRemapComplete = false;
 
 	cube::Game* game;
 	BuildingMod* mod;

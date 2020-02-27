@@ -40,6 +40,12 @@ void BuildWindow::Present() {
 	bool oldBoxStates[] = { buildModeEnabled, underwater, waterBlock, wetBlock, lavaBlock, poisonBlock };
 
 	ImGui::Checkbox("Build mode", &buildModeEnabled);
+	ImGui::SameLine(ImGui::GetWindowWidth() - 20 - 100);
+	if (ImGui::Button(awaitingKeyRemap ?
+		"Waiting..." : (std::string("Remap ") + mod->GetBuildButton()->GetKeyName()).c_str()
+		, ImVec2(100, 21))) {
+		awaitingKeyRemap = true;
+	}
 
 	ImGui::Checkbox("Ignore water", &underwater);
 
@@ -152,6 +158,15 @@ int BuildWindow::WindowProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 		}
 	}
 	if (wantKeyboard) return 1;
+
+	// It's hacky that we have to handle this in two different places,
+	// but the game uses both WindowProc and DInput :/
+	if (awaitingKeyRemap && keyRemapComplete) {
+		awaitingKeyRemap = false;
+		keyRemapComplete = false;
+		return 1;
+	}
+
 	return 0;
 }
 
@@ -170,6 +185,17 @@ void BuildWindow::OnGetMouseState(DIMOUSESTATE* diMouse) {
 void BuildWindow::OnGetKeyboardState(BYTE* diKeys) {
 	if (wantKeyboard) {
 		memset(diKeys, 0, 256);
+	}
+	if (awaitingKeyRemap) {
+		for (int i = 0; i < 256; i++) {
+			if (diKeys[i]) {
+				keyRemapComplete = true;
+				mod->GetBuildButton()->SetKey(i); // Remap
+				memset(diKeys, 0, 256);
+				break;
+			}
+		}
+		
 	}
 }
 

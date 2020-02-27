@@ -42,6 +42,7 @@ public:
 	void QueueBlocks(std::vector<std::pair<cube::Block, LongVector3>> blocks);
 	ZoneSaver::WorldContainer* GetWorldContainer();
 	void PlayGUISelectNoise();
+	DButton* GetBuildButton();
 
 private:
 	void PrintMessagePrefix();

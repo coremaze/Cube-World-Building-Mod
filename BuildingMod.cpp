@@ -299,6 +299,10 @@ void BuildingMod::PlayGUISelectNoise() {
 	game->PlaySoundEffect(cube::Game::sound_menu_select, 1.0, 0.8);
 }
 
+DButton* BuildingMod::GetBuildButton() {
+	return &buildButton;
+}
+
 // Event handlers
 void BuildingMod::Initialize() {
 	GetSystemTime(&lastPlacementTime);

@@ -12,7 +12,8 @@ public:
 	DButton(int diKey);
 	void Update(BYTE* diKeys);
 	bool Pressed();
-
+	void SetKey(int dikey);
+	const char* GetKeyName();
 
 };
 #endif // DBUTTON_H
