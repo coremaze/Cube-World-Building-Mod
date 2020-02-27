@@ -191,6 +191,7 @@ void BuildWindow::OnGetKeyboardState(BYTE* diKeys) {
 			if (diKeys[i]) {
 				keyRemapComplete = true;
 				mod->GetBuildButton()->SetKey(i); // Remap
+				mod->SaveButtonConfig(); // Save
 				memset(diKeys, 0, 256);
 				break;
 			}

@@ -5,6 +5,10 @@
 #define BLOCK_PICK_WAIT_TIME 250
 #define BLOCK_PLACE_WAIT_TIME 150
 
+#define MOD_DIR "Mods\\BuildingMod\\"
+#define CONFIG_DIR MOD_DIR "config\\"
+#define BUILDTOGGLE_CONFIG CONFIG_DIR "buildToggle"
+
 
 void BuildingMod::PrintMessagePrefix() {
 	game->PrintMessage(L"[");
@@ -303,6 +307,31 @@ DButton* BuildingMod::GetBuildButton() {
 	return &buildButton;
 }
 
+void BuildingMod::LoadButtonConfig() {
+	CreateDirectory(MOD_DIR, NULL);
+	CreateDirectory(CONFIG_DIR, NULL);
+	std::ifstream file(BUILDTOGGLE_CONFIG, std::ios::in | std::ios::binary | std::ios::ate);
+	if (file.is_open()) {
+		//File exists, read it
+		size_t fsize = file.tellg();
+		if (fsize == sizeof(buildButton.diKey)) {
+			file.seekg(0, std::ios::beg);
+			file.read((char*)&buildButton.diKey, fsize);
+		}
+		file.close();
+	}
+	SaveButtonConfig();
+}
+
+void BuildingMod::SaveButtonConfig() {
+	CreateDirectory(MOD_DIR, NULL);
+	CreateDirectory(CONFIG_DIR, NULL);
+	std::ofstream file;
+	file.open(BUILDTOGGLE_CONFIG, std::ios::out | std::ios::binary);
+	file.write((char*)&buildButton.diKey, sizeof(buildButton.diKey));
+	file.close();
+}
+
 // Event handlers
 void BuildingMod::Initialize() {
 	GetSystemTime(&lastPlacementTime);
@@ -314,6 +343,7 @@ void BuildingMod::Initialize() {
 	currentBlock.type = cube::Block::Type::Solid;
 	buildWindow = new BuildWindow(this);
 	buildNetwork = new BuildNetwork(this);
+	LoadButtonConfig();
 }
 
 void BuildingMod::OnGameTick(cube::Game* game) {

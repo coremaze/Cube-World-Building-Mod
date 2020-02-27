@@ -43,6 +43,8 @@ public:
 	ZoneSaver::WorldContainer* GetWorldContainer();
 	void PlayGUISelectNoise();
 	DButton* GetBuildButton();
+	void LoadButtonConfig();
+	void SaveButtonConfig();
 
 private:
 	void PrintMessagePrefix();
