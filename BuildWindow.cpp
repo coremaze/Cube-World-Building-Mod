@@ -40,10 +40,10 @@ void BuildWindow::Present() {
 	bool oldBoxStates[] = { buildModeEnabled, underwater, waterBlock, wetBlock, lavaBlock, poisonBlock };
 
 	ImGui::Checkbox("Build mode", &buildModeEnabled);
-	ImGui::SameLine(ImGui::GetWindowWidth() - 20 - 100);
+	ImGui::SameLine(ImGui::GetWindowWidth() - 160);
 	if (ImGui::Button(awaitingKeyRemap ?
 		"Waiting..." : (std::string("Remap ") + mod->GetBuildButton()->GetKeyName()).c_str()
-		, ImVec2(100, 21))) {
+		, ImVec2(150, 21))) {
 		awaitingKeyRemap = true;
 	}
 
