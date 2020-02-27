@@ -19,11 +19,16 @@ void BuildingMod::PrintMessagePrefix() {
 void BuildingMod::ToggleBuildMode() {
 	buildMode = !buildMode;
 	buildWindow->SetBuildMode(buildMode);
-	wchar_t message[64];
-	swprintf(message, L"Building mode %ls.\n", buildMode ? L"enabled" : L"disabled");
 
 	PrintMessagePrefix();
-	game->PrintMessage(message);
+	game->PrintMessage(L"Building ");
+	if (buildMode) {
+		game->PrintMessage(L"enabled", 70, 255, 70);
+	}
+	else {
+		game->PrintMessage(L"disabled", 255, 70, 70);
+	}
+	game->PrintMessage(L".\n");
 }
 
 bool BuildingMod::InBuildMode() {
