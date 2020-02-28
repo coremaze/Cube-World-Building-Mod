@@ -295,6 +295,9 @@ void BuildingMod::ReloadZonesIfNeeded() {
 		}
 		firstTime = false;
 		
+		chunkUpdatesMtx.lock();
+		chunkUpdates.clear();
+		chunkUpdatesMtx.unlock();
 		PrintMessagePrefix();
 		game->PrintMessage(L"All chunks are currently being updated. Block updates will be slow until this process is finished.\n");
 	}
