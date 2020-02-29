@@ -1,6 +1,6 @@
 #ifndef DBUTTON_H
 #define DBUTTON_H
-#include "cwmods/cwsdk.h"
+#include "CWSDK/cwsdk.h"
 
 class DButton {
 private:

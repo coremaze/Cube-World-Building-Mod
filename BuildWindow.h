@@ -1,7 +1,7 @@
 #ifndef BUILDWINDOW_H
 #define BUILDWINDOW_H
 
-#include "cwmods/cwsdk.h"
+#include "CWSDK/cwsdk.h"
 #include "imgui-1.73/imgui.h"
 #include "imgui-1.73/examples/imgui_impl_dx11.h"
 #include "imgui-1.73/examples/imgui_impl_win32.h"

@@ -1,5 +1,5 @@
 #pragma once
-#include "cwmods/cwsdk.h"
+#include "CWSDK/cwsdk.h"
 class ChunkUpdate {
 public:
 	cube::Block block;

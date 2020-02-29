@@ -1,6 +1,6 @@
 #pragma once
 #include "BuildNetworkPacket.h"
-#include "../cwmods/cwsdk.h"
+#include "../CWSDK/cwsdk.h"
 
 #pragma pack(push, 1)
 class SingleBlockUpdatePacket : public BuildNetworkPacket {

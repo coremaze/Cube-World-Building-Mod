@@ -1,5 +1,5 @@
 #include "ZoneUpdatePacket.h"
-#include "../cwmods/cwsdk.h"
+#include "../CWSDK/cwsdk.h"
 
 void ZoneUpdatePacket::Send(CSteamID steamID, i32 channel) {
 	BytesIO bytesio;

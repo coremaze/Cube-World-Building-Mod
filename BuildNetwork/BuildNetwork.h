@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../cwmods/cwsdk.h"
+#include "../CWSDK/cwsdk.h"
 #include "BuildNetworkPacket.h"
 #include "SingleBlockUpdatePacket.h"
 #include "PingPacket.h"

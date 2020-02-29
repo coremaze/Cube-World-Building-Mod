@@ -1,6 +1,6 @@
 #ifndef BUILDINGMOD_H
 #define BUILDINGMOD_H
-#include "cwmods/cwsdk.h"
+#include "CWSDK/cwsdk.h"
 #include "DButton.h"
 #include "BuildWindow.h"
 #include "ChunkUpdate.h"
