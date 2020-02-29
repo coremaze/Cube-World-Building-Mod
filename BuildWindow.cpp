@@ -63,7 +63,7 @@ void BuildWindow::Present() {
 	if (ImGui::Button(awaitingKeyRemap ?
 		"Waiting..." : (std::string("Remap ") + mod->GetBuildButton()->GetKeyName()).c_str()
 		, ImVec2(150, 21))) {
-		awaitingKeyRemap = true;
+		awaitingKeyRemap = !awaitingKeyRemap;
 	}
 
 	ImGui::Checkbox("Ignore water", &underwater);
